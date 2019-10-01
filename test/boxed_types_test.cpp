@@ -1,8 +1,10 @@
 
 #include <iostream>
+#include <assert.h>
 
 #include "boxed_types.hpp"
 #include "traits.hpp"
+#include "rank.hpp"
 
 using std::cout;
 using std::endl;
@@ -15,9 +17,9 @@ int main() {
   static_assert(i == -3);
   static_assert(n == 4);
   static_assert(i + n == 1);
-   
-  cout << i << "\t(-3)\n";
-  cout << n << "\t(4)\n";
+
+  assert(i == -3);
+  assert(n == 4);
 
   static_assert(is_boxed_type_v<Int>);
   static_assert(is_boxed_type_v<Nat>);
@@ -46,6 +48,6 @@ int main() {
   static_assert(std::is_scalar_v<Int::boxedtype>);
   static_assert(is_scalar_v<Int>);
 
-  cout << "\nSuccess\n";
+  cout << "boxed type test success!\n";
   return 0;
 }

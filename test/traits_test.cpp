@@ -7,8 +7,9 @@
 #include <queue>
 #include <array>
 #include <list>
+#include <assert.h>
 
-#include "../traits.hpp"
+#include "traits.hpp"
 
 using std::cout;
 using std::endl;
@@ -23,6 +24,8 @@ int main(int argc, char** argv)
   static_assert(is_insertable_v<std::string>);
   static_assert(is_insertable_v<std::list<int>>);
   static_assert(!is_insertable_v<std::stack<std::string>>);
+
+  cout << "traits test successful!\n";
 
   return 0;
 }

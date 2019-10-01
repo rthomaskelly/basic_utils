@@ -1,5 +1,8 @@
-#include "../string_predicates.hpp"
+
 #include <iostream>
+#include <assert.h>
+
+#include "string_predicates.hpp"
 
 using namespace ryk;
 using std::cout;
@@ -15,21 +18,22 @@ int main(int argc, char** argv)
   static_assert(is_string_v<std::string>);
   static_assert(is_string_v<const std::string>);
 
-  cout << is_nat(s0) << "\t(0)\n";
-  cout << is_nat(s1) << "\t(1)\n";
-  cout << is_nat(s2) << "\t(1)\n";
-  cout << is_nat(s3) << "\t(0)\n";
+  assert(!is_nat(s0));
+  assert(is_nat(s1));
+  assert(is_nat(s2));
+  assert(!is_nat(s3));
 
-  cout << is_int(s0) << "\t(0)\n";
-  cout << is_int(s1) << "\t(1)\n";
-  cout << is_int(s2) << "\t(1)\n";
-  cout << is_int(s3) << "\t(0)\n";
+  assert(!is_int(s0));
+  assert(is_int(s1));
+  assert(is_int(s2));
+  assert(!is_int(s3));
 
-  cout << is_float(s0) << "\t(0)\n";
-  cout << is_float(s1) << "\t(1)\n";
-  cout << is_float(s2) << "\t(1)\n";
-  cout << is_float(s3) << "\t(0)\n";
+  assert(!is_float(s0));
+  assert(is_float(s1));
+  assert(is_float(s2));
+  assert(!is_float(s3));
 
+  cout << "string predicates test successful!\n";
 
   return 0;
 }

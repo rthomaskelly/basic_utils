@@ -56,11 +56,14 @@ int main(int argc, char** argv)
   g.seeded_depth_search(10, touch_dbg, search_dbg, child_dbg);
 
   cout << "\n1100 from 10? " << g.depth_search(10, 1100) << endl << endl;
-
+ 
+  const auto gc = g;
+  cout << gc << endl;
+  
   //g.full_search<std::stack>(1, [](auto n){ cout << "touched '" << n << "'\n"; },
   //              [](auto n){ cout << "searched '" << n << "'\n"; });
 
-  cout << "graph test successful!\n";
+  cout << "\ngraph test successful!\n";
 
   return 0;
 }

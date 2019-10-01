@@ -101,58 +101,56 @@ class directed_graph
   //
   template<class OnTouched, class OnSearched, class OnChild>
   bool depth_search(const Node& seed, const Node& target, 
-             OnTouched on_touched = [](searchlist_subtype n){}, 
-             OnSearched on_searched = [](searchlist_subtype n){},
-             OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool depth_search(const Node& seed, const Node& target);
+           OnTouched on_touched = [](searchlist_subtype n){}, 
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
+  bool depth_search(const Node& seed, const Node& target) const;
   template<class OnTouched, class OnSearched, class OnChild>
   bool targeted_depth_search(const Node& target,
-               OnTouched on_touched = [](searchlist_subtype n){},
-               OnSearched on_searched = [](searchlist_subtype n){},
-               OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool targeted_depth_search(const Node& target);
+           OnTouched on_touched = [](searchlist_subtype n){},
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
+  bool targeted_depth_search(const Node& target) const;
   template<class OnTouched, class OnSearched, class OnChild>
   void seeded_depth_search(const Node& seed, OnTouched on_touched = [](searchlist_subtype n){}, 
-               OnSearched on_searched = [](searchlist_subtype n){},
-               OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  void seeded_depth_search(const Node& seed);
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
+  void seeded_depth_search(const Node& seed) const;
   template<class OnTouched, class OnSearched, class OnChild>
   void seeded_depth_search(OnTouched on_touched = [](searchlist_subtype n){}, 
-               OnSearched on_searched = [](searchlist_subtype n){},
-               OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  void seeded_depth_search();
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
 
   //
   // The four breadth searches.
   //
   template<class OnTouched, class OnSearched, class OnChild>
   bool breadth_search(const Node& seed, const Node& target, 
-               OnTouched on_touched = [](searchlist_subtype n){},
-               OnSearched on_searched = [](searchlist_subtype n){},
-               OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool breadth_search(const Node& seed, const Node& target);
+           OnTouched on_touched = [](searchlist_subtype n){},
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
+  bool breadth_search(const Node& seed, const Node& target) const;
   template<class OnTouched, class OnSearched, class OnChild>
   bool targeted_breadth_search(const Node& target,
-               OnTouched on_touched = [](searchlist_subtype n){}, 
-               OnSearched on_searched = [](searchlist_subtype n){},
-               OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool targeted_breadth_search(const Node& target);
+           OnTouched on_touched = [](searchlist_subtype n){}, 
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
+  bool targeted_breadth_search(const Node& target) const;
   template<class OnTouched, class OnSearched, class OnChild>
   void seeded_breadth_search(const Node& seed, 
-               OnTouched on_touched = [](searchlist_subtype n){}, 
-               OnSearched on_searched = [](searchlist_subtype n){},
-               OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  void seeded_breadth_search(const Node& seed);
+           OnTouched on_touched = [](searchlist_subtype n){}, 
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
+  void seeded_breadth_search(const Node& seed) const;
   template<class OnTouched, class OnSearched, class OnChild>
   void seeded_breadth_search(OnTouched on_touched = [](searchlist_subtype n){}, 
-               OnSearched on_searched = [](searchlist_subtype n){},
-               OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  void seeded_breadth_search();
+           OnSearched on_searched = [](searchlist_subtype n){},
+           OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){}) const;
     
   directed_graph find_path(const Node& startnode, const Node& endnode);
 
-  template<class N, class E, class H>
-  friend std::ostream& operator<<(std::ostream&, directed_graph<N, E, H>& g);
+  //template<class N, class E, class H>
+  //friend std::ostream& operator<<(std::ostream&, directed_graph<N, E, H>& g);
   
   bool operator==(const directed_graph& rhs) const noexcept;
 
@@ -216,24 +214,24 @@ protected:
   bool search(const Node& seed, const Node& target,
               OnTouched on_touched = [](searchlist_subtype n){},
               OnSearched on_searched = [](searchlist_subtype n){},
-              OnChild on_child = [](searchlist_subtype n){});  
+              OnChild on_child = [](searchlist_subtype n){}) const;
   template<class C, class OnTouched, class OnSearched, class OnChild>
   bool search(const Node& seed, const Node& target, 
               OnTouched on_touched = [](searchlist_subtype n){}, 
               OnSearched on_searched = [](searchlist_subtype n){},
-              OnChild on_child = [](searchlist_subtype n){});  
+              OnChild on_child = [](searchlist_subtype n){}) const;  
   template<class C,class OnTouched, class OnSearched, class OnChild>
   bool targeted_search(const Node& target, OnTouched on_touched = [](searchlist_subtype n){}, 
-                       OnSearched on_searched = [](searchlist_subtype n){},
-                       OnChild on_child = [](searchlist_subtype n){});  
+              OnSearched on_searched = [](searchlist_subtype n){},
+              OnChild on_child = [](searchlist_subtype n){}) const;
   template<class C, class OnTouched, class OnSearched, class OnChild>
   void seeded_search(const Node& seed, OnTouched on_touched = [](searchlist_subtype n){}, 
-                     OnSearched on_searched = [](searchlist_subtype n){},
-                     OnChild on_child = [](searchlist_subtype n){});  
+              OnSearched on_searched = [](searchlist_subtype n){},
+              OnChild on_child = [](searchlist_subtype n){}) const;  
   template<class C, class OnTouched, class OnSearched, class OnChild>
   void seeded_search(OnTouched on_touched = [](searchlist_subtype n){}, 
-                     OnSearched on_searched = [](searchlist_subtype n){},
-                     OnChild on_child = [](searchlist_subtype n){});  
+              OnSearched on_searched = [](searchlist_subtype n){},
+              OnChild on_child = [](searchlist_subtype n){}) const;
 
 };
 
@@ -373,30 +371,30 @@ Edge directed_graph<Node, Edge, Hash>::edge_between(const Node& parent, const No
   auto iter = find_child(parent, child);
   return iter->second;
 }
-template<class Attach>
-template<class Node, class Edge, class Hash>
-void directed_graph<Node, Edge, Hash>::replace(const Node& node, 
-                                               const directed_graph& replacement, 
-                                               Attach attach)
-{
-  // vocab:
-  // target graph -> the *this graph
-  // target node -> here 'node'
-  // replacement -> here replacement
-  // specific: the definition -> the replacement
-  // attaches -> a type of node in the replacement, evaluated by lambda is_attaches
-  // specific: placeholder -> an attaches in the definition
-  // target descendents ->
-
-
-  // for my def case:
-  // need to replace the placeholders in the definition (here replacement) 
-  // these placeholders correspond to the main graph by edgename from the replacing node
-  // attach is (children, graph)->void
-  auto the_children = children(node);
-   
-  
-} 
+//template<class Node, class Edge, class Hash>
+//template<class Attach>
+//void directed_graph<Node, Edge, Hash>::replace(const Node& node, 
+//                                               const directed_graph& replacement, 
+//                                               Attach attach)
+//{
+//  // vocab:
+//  // target graph -> the *this graph
+//  // target node -> here 'node'
+//  // replacement -> here replacement
+//  // specific: the definition -> the replacement
+//  // attaches -> a type of node in the replacement, evaluated by lambda is_attaches
+//  // specific: placeholder -> an attaches in the definition
+//  // target descendents ->
+//
+//
+//  // for my def case:
+//  // need to replace the placeholders in the definition (here replacement) 
+//  // these placeholders correspond to the main graph by edgename from the replacing node
+//  // attach is (children, graph)->void
+//  auto the_children = children(node);
+//   
+//  
+//} 
 template<class Node, class Edge, class Hash>
 void directed_graph<Node, Edge, Hash>::replace(const Node& node, const Node& parent, 
                                                const directed_graph& replacement, 
@@ -451,14 +449,14 @@ template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 bool directed_graph<Node, Edge, Hash>::
 depth_search(const Node& seed, const Node& target,
-             OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+             OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   return search<std::stack<searchlist_subtype>>
            (seed, target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge, class Hash>
 bool directed_graph<Node, Edge, Hash>::
-depth_search(const Node& seed, const Node& target)
+depth_search(const Node& seed, const Node& target) const
 {
   return depth_search(seed, target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
@@ -466,14 +464,14 @@ template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 bool directed_graph<Node, Edge, Hash>::
 targeted_depth_search(const Node& target, OnTouched on_touched,
-                      OnSearched on_searched, OnChild on_child)
+                      OnSearched on_searched, OnChild on_child) const
 {
   return targeted_search<std::stack<searchlist_subtype>>
            (target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge, class Hash>
 bool directed_graph<Node, Edge, Hash>::
-targeted_depth_search(const Node& target)
+targeted_depth_search(const Node& target) const
 {
   return targeted_depth_search(target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
@@ -481,44 +479,38 @@ template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 void directed_graph<Node, Edge, Hash>::
 seeded_depth_search(const Node& seed, OnTouched on_touched,
-                    OnSearched on_searched, OnChild on_child)
+                    OnSearched on_searched, OnChild on_child) const
 {
   seeded_search<std::stack<searchlist_subtype>>
            (seed, on_touched, on_searched, on_child);
 } 
 template<class Node, class Edge, class Hash>
 void directed_graph<Node, Edge, Hash>::
-seeded_depth_search(const Node& seed)
+seeded_depth_search(const Node& seed) const
 {
   seeded_depth_search(seed, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
 template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 void directed_graph<Node, Edge, Hash>::
-seeded_depth_search(OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+seeded_depth_search(OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   seeded_search<std::stack<searchlist_subtype>>
            (on_touched, on_searched, on_child);
-}
-template<class Node, class Edge, class Hash>
-void directed_graph<Node, Edge, Hash>::
-seeded_depth_search()
-{
-  seeded_depth_search([](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
 
 template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 bool directed_graph<Node, Edge, Hash>::
 breadth_search(const Node& seed, const Node& target,
-             OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+             OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   return search<std::queue<searchlist_subtype>>
            (seed, target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge, class Hash>
 bool directed_graph<Node, Edge, Hash>::
-breadth_search(const Node& seed, const Node& target)
+breadth_search(const Node& seed, const Node& target) const
 {
   return breadth_search(seed, target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
@@ -526,14 +518,14 @@ template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 bool directed_graph<Node, Edge, Hash>::
 targeted_breadth_search(const Node& target, OnTouched on_touched,
-                        OnSearched on_searched, OnChild on_child)
+                        OnSearched on_searched, OnChild on_child) const
 {
   return targeted_search<std::queue<searchlist_subtype>>
            (target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge, class Hash>
 bool directed_graph<Node, Edge, Hash>::
-targeted_breadth_search(const Node& target)
+targeted_breadth_search(const Node& target) const
 {
   return targeted_breadth_search(target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
@@ -541,31 +533,26 @@ template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 void directed_graph<Node, Edge, Hash>::
 seeded_breadth_search(const Node& seed, OnTouched on_touched,
-                      OnSearched on_searched, OnChild on_child)
+                      OnSearched on_searched, OnChild on_child) const
 {
   seeded_search<std::queue<searchlist_subtype>>
            (seed, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge, class Hash>
 void directed_graph<Node, Edge, Hash>::
-seeded_breadth_search(const Node& seed)
+seeded_breadth_search(const Node& seed) const
 {
   seeded_breadth_search(seed, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
 template<class Node, class Edge, class Hash>
 template<class OnTouched, class OnSearched, class OnChild>
 void directed_graph<Node, Edge, Hash>::
-seeded_breadth_search(OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+seeded_breadth_search(OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   seeded_search<std::queue<searchlist_subtype>>
            (on_touched, on_searched, on_child);
 }
-template<class Node, class Edge, class Hash>
-void directed_graph<Node, Edge, Hash>::
-seeded_breadth_search()
-{
-  seeded_breadth_search([](auto n){}, [](auto n){}, [](auto c, auto p){});
-}
+
 
 template<class Node, class Edge, class Hash> 
 directed_graph<Node, Edge, Hash> 
@@ -616,7 +603,7 @@ template<class Node, class Edge, class Hash>
 template<class C, bool targeted, class OnTouched, class OnSearched, class OnChild>
 bool directed_graph<Node, Edge, Hash>::
 search(const Node& seed, const Node& target, 
-       OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+       OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   C searchlist;
   std::unordered_map<Node, search_status, Hash> node_status_map;
@@ -644,7 +631,7 @@ template<class Node, class Edge, class Hash>
 template<class C, class OnTouched, class OnSearched, class OnChild>
 bool directed_graph<Node, Edge, Hash>::
 search(const Node& seed, const Node& target, 
-       OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+       OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   return search<C, true>(seed, target, on_touched, on_searched, on_child);
 }
@@ -652,7 +639,7 @@ template<class Node, class Edge, class Hash>
 template<class C, class OnTouched, class OnSearched, class OnChild>
 bool directed_graph<Node, Edge, Hash>::
 targeted_search(const Node& target, 
-                OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+                OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   for (auto& root_node : root_nodes())
     if (search<C>(root_node, target, on_touched, on_searched, on_child)) return true;
@@ -662,7 +649,7 @@ template<class Node, class Edge, class Hash>
 template<class C, class OnTouched, class OnSearched, class OnChild>
 void directed_graph<Node, Edge, Hash>::
 seeded_search(const Node& seed,
-              OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+              OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   auto dummy_target = Node{};
   search<C, false>(seed, dummy_target, on_touched, on_searched, on_child);
@@ -670,7 +657,7 @@ seeded_search(const Node& seed,
 template<class Node, class Edge, class Hash>
 template<class C, class OnTouched, class OnSearched, class OnChild>
 void directed_graph<Node, Edge, Hash>::
-seeded_search(OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+seeded_search(OnTouched on_touched, OnSearched on_searched, OnChild on_child) const
 {
   for (auto& root_node : root_nodes())
     seeded_search<C>(root_node, on_touched, on_searched, on_child);
@@ -700,7 +687,7 @@ void directed_graph<Node, Edge, Hash>::full_search(const Node& starting_node, Fn
 }*/
 
 template<class N, class E, class H>
-std::ostream& operator<<(std::ostream& os, directed_graph<N, E, H>& g)
+std::ostream& operator<<(std::ostream& os, const directed_graph<N, E, H>& g)
 {
   //
   // TODO: fix this implementation, DFS won't show all relationships

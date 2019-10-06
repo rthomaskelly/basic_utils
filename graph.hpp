@@ -617,9 +617,9 @@ search(const Node& seed, const Node& target,
     auto next_children = children(current_node);
     on_touched(pop(searchlist));
     for (auto& child : next_children) {
+      on_child(child, current_item);
       if (node_status_map[child.first] == search_status::unvisited) {
         searchlist.push(child);
-        on_child(child, current_item);
       }
     }
     node_status_map[current_node] = search_status::searched;

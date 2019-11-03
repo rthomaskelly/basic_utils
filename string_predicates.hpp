@@ -4,7 +4,7 @@
 #include <cctype>
 #include <string>
 
-#include "iterable_utils.hpp"
+#include "iterable_algorithms.hpp"
 
 using std::string;
 

@@ -3,6 +3,13 @@
 
 #include "traits.hpp"
 
+//
+// TODO: review our implementations with what is available in STL
+// currently I don't believe much of this works
+//
+
+
+
 namespace ryk {
 // 
 // rank definitions for scalars, iterables and boxed_types

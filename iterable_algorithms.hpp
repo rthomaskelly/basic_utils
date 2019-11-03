@@ -1,5 +1,5 @@
-#ifndef ryk_iterable_utils
-#define ryk_iterable_utils
+#ifndef ryk_iterable_algorithms
+#define ryk_iterable_algorithms
 
 #include <algorithm>
 #include <numeric>
@@ -96,7 +96,7 @@ index_of(const Iterable& c, const iterator<Iterable>& i)
 }
 
 //
-// accumulate and reduce
+// accumulate and reduce (reduce not yet available in GCC <=9.2)
 //
 template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
@@ -116,43 +116,46 @@ accumulate(const Iterable& c, Fn f)
 {
   return std::accumulate(c.begin(), c.end(), subtype<Iterable>{}, f);
 }
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-reduce(const Iterable& c, subtype<Iterable> init = subtype<Iterable>{})
-{
-  return std::reduce(c.begin(), c.end(), init); 
-}
-template<class Iterable, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-reduce(const Iterable& c, subtype<Iterable> init, Fn f)
-{
-  return std::reduce(c.begin(), c.end(), init, Fn f); 
-}
-template<class Iterable, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-reduce(const Iterable& c, Fn f)
-{
-  return reduce(c, subtype<Iterable>{}, f);
-}
+// template<class Iterable> inline constexpr
+// std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
+// reduce(const Iterable& c, subtype<Iterable> init = subtype<Iterable>{})
+// {
+//   return std::reduce(c.begin(), c.end(), init); 
+// }
+// template<class Iterable, class Fn> inline constexpr
+// std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
+// reduce(const Iterable& c, subtype<Iterable> init, Fn f)
+// {
+//   return std::reduce(c.begin(), c.end(), init, Fn f); 
+// }
+// template<class Iterable, class Fn> inline constexpr
+// std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
+// reduce(const Iterable& c, Fn f)
+// {
+//   return reduce(c, subtype<Iterable>{}, f);
+// }
 
 //
 // sort
 //
 template<class T> inline constexpr
-void sort(const std::set<T>& s)
+std::set<T>& sort(const std::set<T>& s)
 {
+  return s;
 }
 template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, void>
+std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
 sort(Iterable& c)
 {
   std::sort(c.begin(), c.end());
+  return c;
 }
 template<class Iterable, class Compare> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, void>
+std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
 sort(Iterable& c, Compare compare)
 {
   std::sort(c.begin(), c.end(), compare);
+  return c;
 }
 
 //
@@ -225,13 +228,13 @@ template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, iterator<Iterable>>
 unique(Iterable& c)
 {
-  std::unique(c.begin(), c.end());
+  return std::unique(c.begin(), c.end());
 }
 template<class Iterable, class Compare> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, iterator<Iterable>>
 unique(Iterable& c, Compare compare)
 {
-  std::unique(c.begin(), c.end(), compare);
+  return std::unique(c.begin(), c.end(), compare);
 }
 template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, iterator<Iterable>>
@@ -355,13 +358,6 @@ has_if(Iterable& c, Pred pred)
   return find_if(c, pred) != c.end();
 }
 
-//
-// useful iterable functions common in other languages
-// note: that reduce() is a lot like std::accumulate but takes a
-// function argument before an initial value allowing default initial values
-// also: the name std::accumulate is a poor choice being a synonym for sum
-// the name 'reduce' is the original Lisp name
-//
 
 //
 // all and all_of
@@ -461,7 +457,6 @@ morph(const Iterable<T>& c, Fn f)
   return r; 
 }
 
-
 //
 // tie - performs a function on each pair of two iterables
 // TODO: finish, currently does NOT work
@@ -474,8 +469,6 @@ tie(const Iterable0& c0, const Iterable1& c1, Fn f)
   for(; i0 < c0.end() && i1 < c1.end(); ++i0, ++i1) f(*i0, *i1);
   return c0;
 }
-
-
 
 //
 // at and iterator_at - get (reference to) an element at an index or an iterator
@@ -510,14 +503,14 @@ template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
 sum(const Iterable& c, const subtype<Iterable>& init = subtype<Iterable>{})
 {
-  return reduce(c, 
+  return accumulate(c, 
     [](const subtype<Iterable>& t1, const subtype<Iterable>& t2) { return t1 + t2; });
 }
 template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
 product(const Iterable& c, const subtype<Iterable>& init = subtype<Iterable>{})
 {
-  return reduce(c, 
+  return accumulate(c, 
     [](const subtype<Iterable>& t1, const subtype<Iterable>& t2) { return t1 * t2; });
 }
 template<class Iterable> inline constexpr

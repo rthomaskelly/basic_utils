@@ -4,11 +4,9 @@
 #include "boxed_types.hpp"
 #include "traits.hpp"
 #include "algorithm_extras.hpp"
-#include "iterable_utils.hpp"
+#include "iterable_algorithms.hpp"
 #include "predicates.hpp"
 #include "string_predicates.hpp"
 #include "ostream_operators.hpp"
-#include "rank.hpp"
-#include "graph.hpp"
 
 #endif

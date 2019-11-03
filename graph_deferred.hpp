@@ -7,7 +7,7 @@
 
 #include <gcpp/deferred_allocator.h>
 
-#include "iterable_utils.hpp"
+#include "iterable_algorithms.hpp"
 #include "algorithm_extras.hpp"
 
 namespace ryk {
@@ -24,20 +24,24 @@ class deferred_graph
   class graph_node
   {
    public:
+    graph_node()
+     : the_data{}
+    {
+    }
     graph_node(const Node& new_data)
-     : the_data(new_data)
+     : the_data{new_data}
     {
     }
     
     operator Node&() { return the_data; } 
-    const Node& data() const noexcept { return the_data; }
+    Node& data() noexcept { return the_data; }
     
     friend class deferred_graph;
    protected: 
     gcpp::deferred_vector<std::pair<gcpp::deferred_ptr<graph_node>, Edge>> 
     children{the_graph_heap};
 
-    std::vector<std::pair<graph_node*, Edge>> parents;
+    std::vector<std::pair<std::weak_ptr<graph_node>, Edge>> parents;
   
     Node the_data;
   };
@@ -60,17 +64,26 @@ class deferred_graph
   std::vector<std::pair<graph_node*, Edge>>&
   parents(gcpp::deferred_ptr<graph_node> child);
 
+  void add_root(gcpp::deferred_ptr<graph_node> new_root);
+
   void add_child(gcpp::deferred_ptr<graph_node> parent, 
                  const Node& child, const Edge& edge = Edge{});
   
   bool has(gcpp::deferred_ptr<graph_node> node);
-
+ 
   void attach(gcpp::deferred_ptr<graph_node>& parent, 
               const deferred_graph& attachment, const Edge& edge = Edge{});
  
   void append(const deferred_graph& g, const Edge& edge = Edge{});
 
   bool operator==(const deferred_graph& rhs) const noexcept;
+ 
+  gcpp::deferred_ptr<graph_node>
+  find(const Node& target);
+
+  template<class GraphNodePredicate>
+  gcpp::deferred_ptr<graph_node>
+  find_if(GraphNodePredicate p);
 
   //
   // Below are four ways to breadth & depth search
@@ -91,48 +104,77 @@ class deferred_graph
   // signartures were required.
   //
   template<class OnTouched, class OnSearched, class OnChild>
-  bool depth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target, 
+  gcpp::deferred_ptr<graph_node>
+  depth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target, 
            OnTouched on_touched = [](searchlist_subtype n){}, 
            OnSearched on_searched = [](searchlist_subtype n){},
            OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool depth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target);
+
+  gcpp::deferred_ptr<graph_node>
+  depth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target);
+
   template<class OnTouched, class OnSearched, class OnChild>
-  bool targeted_depth_search(gcpp::deferred_ptr<graph_node> target,
+  gcpp::deferred_ptr<graph_node>
+  targeted_depth_search(gcpp::deferred_ptr<graph_node> target,
            OnTouched on_touched = [](searchlist_subtype n){},
            OnSearched on_searched = [](searchlist_subtype n){},
            OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool targeted_depth_search(gcpp::deferred_ptr<graph_node> target);
+
+  gcpp::deferred_ptr<graph_node>
+  targeted_depth_search(gcpp::deferred_ptr<graph_node> target);
+
   template<class OnTouched, class OnSearched, class OnChild>
-  void seeded_depth_search(gcpp::deferred_ptr<graph_node> seed, OnTouched on_touched = [](searchlist_subtype n){}, 
+  void seeded_depth_search(gcpp::deferred_ptr<graph_node> seed, 
+           OnTouched on_touched = [](searchlist_subtype n){}, 
            OnSearched on_searched = [](searchlist_subtype n){},
            OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
+
   void seeded_depth_search(gcpp::deferred_ptr<graph_node> seed);
+
   template<class OnTouched, class OnSearched, class OnChild>
   void seeded_depth_search(OnTouched on_touched = [](searchlist_subtype n){}, 
            OnSearched on_searched = [](searchlist_subtype n){},
            OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
+  //
+  // DFS for just the node
+  gcpp::deferred_ptr<graph_node>
+  targeted_depth_search(const Node& target);
+
+  template<class graph_node_predicate>
+  gcpp::deferred_ptr<graph_node>
+  targeted_depth_search_if(graph_node_predicate);
 
   //
   // The four breadth searches.
   //
   template<class OnTouched, class OnSearched, class OnChild>
-  bool breadth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target, 
+  gcpp::deferred_ptr<graph_node>
+  breadth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target, 
            OnTouched on_touched = [](searchlist_subtype n){},
            OnSearched on_searched = [](searchlist_subtype n){},
            OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool breadth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target);
+
+  gcpp::deferred_ptr<graph_node>
+  breadth_search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target);
+
   template<class OnTouched, class OnSearched, class OnChild>
-  bool targeted_breadth_search(gcpp::deferred_ptr<graph_node> target,
+  gcpp::deferred_ptr<graph_node>
+  targeted_breadth_search(gcpp::deferred_ptr<graph_node> target,
            OnTouched on_touched = [](searchlist_subtype n){}, 
            OnSearched on_searched = [](searchlist_subtype n){},
            OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
-  bool targeted_breadth_search(gcpp::deferred_ptr<graph_node> target);
+
+  gcpp::deferred_ptr<graph_node>
+  targeted_breadth_search(gcpp::deferred_ptr<graph_node> target);
+
   template<class OnTouched, class OnSearched, class OnChild>
   void seeded_breadth_search(gcpp::deferred_ptr<graph_node> seed, 
            OnTouched on_touched = [](searchlist_subtype n){}, 
            OnSearched on_searched = [](searchlist_subtype n){},
            OnChild on_child = [](searchlist_subtype child, searchlist_subtype parent){});
+
   void seeded_breadth_search(gcpp::deferred_ptr<graph_node> seed);
+
   template<class OnTouched, class OnSearched, class OnChild>
   void seeded_breadth_search(OnTouched on_touched = [](searchlist_subtype n){}, 
            OnSearched on_searched = [](searchlist_subtype n){},
@@ -201,17 +243,33 @@ class deferred_graph
   using searchlist_subtype = std::pair<gcpp::deferred_ptr<graph_node>, Edge>;
    
   template<class C, bool targeted, class OnTouched, class OnSearched, class OnChild>
-  bool search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target,
+  gcpp::deferred_ptr<graph_node> 
+  search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target,
+              OnTouched on_touched = [](searchlist_subtype n){},
+              OnSearched on_searched = [](searchlist_subtype n){},
+              OnChild on_child = [](searchlist_subtype n){});
+  template<class C, bool targeted, class TargetPredicate, 
+           class OnTouched, class OnSearched, class OnChild>
+  gcpp::deferred_ptr<graph_node> 
+  search_if(gcpp::deferred_ptr<graph_node> seed, TargetPredicate target_predicate,
+            OnTouched on_touched = [](searchlist_subtype n){},
+            OnSearched on_searched = [](searchlist_subtype n){},
+            OnChild on_child = [](searchlist_subtype n){});
+  template<class C, bool targeted, class OnTouched, class OnSearched, class OnChild>
+  gcpp::deferred_ptr<graph_node> 
+  search(gcpp::deferred_ptr<graph_node> seed, const Node& target,
               OnTouched on_touched = [](searchlist_subtype n){},
               OnSearched on_searched = [](searchlist_subtype n){},
               OnChild on_child = [](searchlist_subtype n){});
   template<class C, class OnTouched, class OnSearched, class OnChild>
-  bool search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target, 
+  gcpp::deferred_ptr<graph_node>
+  search(gcpp::deferred_ptr<graph_node> seed, gcpp::deferred_ptr<graph_node> target, 
               OnTouched on_touched = [](searchlist_subtype n){}, 
               OnSearched on_searched = [](searchlist_subtype n){},
               OnChild on_child = [](searchlist_subtype n){});  
   template<class C,class OnTouched, class OnSearched, class OnChild>
-  bool targeted_search(gcpp::deferred_ptr<graph_node> target, 
+  gcpp::deferred_ptr<graph_node>
+  targeted_search(gcpp::deferred_ptr<graph_node> target, 
               OnTouched on_touched = [](searchlist_subtype n){}, 
               OnSearched on_searched = [](searchlist_subtype n){},
               OnChild on_child = [](searchlist_subtype n){});
@@ -255,6 +313,13 @@ deferred_graph<Node, Edge>::selected_node()
   return the_selected_node;
 }
 
+template<class Node, class Edge>
+void deferred_graph<Node, Edge>::
+add_root(gcpp::deferred_ptr<graph_node> new_root)
+{
+  the_root_nodes.push_back(new_root);
+  the_selected_node = new_root;
+}
 template<class Node, class Edge>
 void deferred_graph<Node, Edge>::
 add_child(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> parent, 
@@ -343,31 +408,60 @@ deferred_graph<Node, Edge>::end() const noexcept
 }
 
 template<class Node, class Edge>
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::find(const Node& target)
+{
+  for (auto& root_node : root_nodes()) {
+    auto r = search_if<std::stack<searchlist_subtype>, true>
+             (root_node, [&target](graph_node& n){ return target == n; });
+    if (r != nullptr) return r;
+  }
+  return nullptr;
+}
+template<class Node, class Edge>
+template<class GraphNodePredicate>
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::find_if(GraphNodePredicate p)
+{
+  for (auto& root_node : root_nodes()) {
+    auto r = search_if<std::stack<searchlist_subtype>, true>(root_node);
+    if (r != nullptr) return r;
+  }
+  return nullptr;
+}
+
+template<class Node, class Edge>
 template<class OnTouched, class OnSearched, class OnChild>
-bool deferred_graph<Node, Edge>::
-depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target,
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+             gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target,
              OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   return search<std::stack<searchlist_subtype>>
            (seed, target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge>
-bool deferred_graph<Node, Edge>::
-depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target)
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+             gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target)
 {
   return depth_search(seed, target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
 template<class Node, class Edge>
 template<class OnTouched, class OnSearched, class OnChild>
-bool deferred_graph<Node, Edge>::
-targeted_depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, OnTouched on_touched,
-                      OnSearched on_searched, OnChild on_child)
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+targeted_depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target,
+                      OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   return targeted_search<std::stack<searchlist_subtype>>
            (target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge>
-bool deferred_graph<Node, Edge>::
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
 targeted_depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target)
 {
   return targeted_depth_search(target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
@@ -375,8 +469,8 @@ targeted_depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::gr
 template<class Node, class Edge>
 template<class OnTouched, class OnSearched, class OnChild>
 void deferred_graph<Node, Edge>::
-seeded_depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, OnTouched on_touched,
-                    OnSearched on_searched, OnChild on_child)
+seeded_depth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+                    OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   seeded_search<std::stack<searchlist_subtype>>
            (seed, on_touched, on_searched, on_child);
@@ -395,33 +489,49 @@ seeded_depth_search(OnTouched on_touched, OnSearched on_searched, OnChild on_chi
   seeded_search<std::stack<searchlist_subtype>>
            (on_touched, on_searched, on_child);
 }
+template<class Node, class Edge>
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::targeted_depth_search(const Node& target)
+{
+  for (auto& root_node : root_nodes()) {
+    auto ptr = search<std::stack<searchlist_subtype>, true>(root_node, target); 
+    if (ptr != nullptr) return ptr;
+  }
+  return nullptr;
+}
 
 template<class Node, class Edge>
 template<class OnTouched, class OnSearched, class OnChild>
-bool deferred_graph<Node, Edge>::
-breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target,
-             OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+               gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target,
+               OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   return search<std::queue<searchlist_subtype>>
            (seed, target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge>
-bool deferred_graph<Node, Edge>::
-breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target)
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+               gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target)
 {
   return breadth_search(seed, target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
 }
 template<class Node, class Edge>
 template<class OnTouched, class OnSearched, class OnChild>
-bool deferred_graph<Node, Edge>::
-targeted_breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, OnTouched on_touched,
-                        OnSearched on_searched, OnChild on_child)
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+targeted_breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, 
+                        OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   return targeted_search<std::queue<searchlist_subtype>>
            (target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge>
-bool deferred_graph<Node, Edge>::
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
 targeted_breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target)
 {
   return targeted_breadth_search(target, [](auto n){}, [](auto n){}, [](auto c, auto p){});
@@ -429,8 +539,8 @@ targeted_breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::
 template<class Node, class Edge>
 template<class OnTouched, class OnSearched, class OnChild>
 void deferred_graph<Node, Edge>::
-seeded_breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, OnTouched on_touched,
-                      OnSearched on_searched, OnChild on_child)
+seeded_breadth_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+                      OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   seeded_search<std::queue<searchlist_subtype>>
            (seed, on_touched, on_searched, on_child);
@@ -452,8 +562,10 @@ seeded_breadth_search(OnTouched on_touched, OnSearched on_searched, OnChild on_c
 
 template<class Node, class Edge>
 template<class C, bool targeted, class OnTouched, class OnSearched, class OnChild>
-bool deferred_graph<Node, Edge>::
-search(const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, 
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+search(const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+       const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, 
        OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   C searchlist;
@@ -466,7 +578,7 @@ search(const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
     searchlist_subtype current_item = head(searchlist);
     auto current_node = current_item.first;
     if constexpr(targeted)
-      if (current_node == target) return true;
+      if (current_node == target) return current_node;
     node_status_map[current_node.get()] = search_status::touched;
     auto& next_children = children(current_node);
     on_touched(pop(searchlist));
@@ -479,25 +591,99 @@ search(const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
     node_status_map[current_node.get()] = search_status::searched;
     on_searched(current_item);
   }
-  return false;
+  return nullptr;
+}
+template<class Node, class Edge>
+template<class C, bool targeted, class TargetPredicate,
+         class OnTouched, class OnSearched, class OnChild>
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+search_if(const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+          TargetPredicate target_predicate,
+          OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+{
+  C searchlist;
+  std::unordered_map<
+    typename deferred_graph<Node, Edge>::graph_node*, 
+    search_status
+  > node_status_map;
+  searchlist.push({seed, Edge{}});
+  while (!searchlist.empty()) {
+    searchlist_subtype current_item = head(searchlist);
+    auto current_node = current_item.first;
+    if constexpr(targeted)
+      if (target_predicate(current_node)) return current_node;
+    node_status_map[current_node.get()] = search_status::touched;
+    auto& next_children = children(current_node);
+    on_touched(pop(searchlist));
+    for (auto& child : next_children) {
+      on_child(child, current_item);
+      if (node_status_map[child.first.get()] == search_status::unvisited) {
+        searchlist.push(child);
+      }
+    }
+    node_status_map[current_node.get()] = search_status::searched;
+    on_searched(current_item);
+  }
+  return nullptr;
+}
+template<class Node, class Edge>
+template<class C, bool targeted, class OnTouched, class OnSearched, class OnChild>
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+search(const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+       const Node& target, 
+       OnTouched on_touched, OnSearched on_searched, OnChild on_child)
+{
+  C searchlist;
+  std::unordered_map<
+    typename deferred_graph<Node, Edge>::graph_node*, 
+    search_status
+  > node_status_map;
+  searchlist.push({seed, Edge{}});
+  while (!searchlist.empty()) {
+    searchlist_subtype current_item = head(searchlist);
+    auto current_node = current_item.first;
+    Node& payload = current_node;
+    if constexpr(targeted)
+      if (payload == target) return current_node;
+    node_status_map[current_node.get()] = search_status::touched;
+    auto& next_children = children(current_node);
+    on_touched(pop(searchlist));
+    for (auto& child : next_children) {
+      on_child(child, current_item);
+      if (node_status_map[child.first.get()] == search_status::unvisited) {
+        searchlist.push(child);
+      }
+    }
+    node_status_map[current_node.get()] = search_status::searched;
+    on_searched(current_item);
+  }
+  return nullptr;
 }
 template<class Node, class Edge>
 template<class C, class OnTouched, class OnSearched, class OnChild>
-bool deferred_graph<Node, Edge>::
-search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, 
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
+search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> seed, 
+       gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, 
        OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
   return search<C, true>(seed, target, on_touched, on_searched, on_child);
 }
 template<class Node, class Edge>
 template<class C, class OnTouched, class OnSearched, class OnChild>
-bool deferred_graph<Node, Edge>::
+gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
+deferred_graph<Node, Edge>::
 targeted_search(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> target, 
                 OnTouched on_touched, OnSearched on_searched, OnChild on_child)
 {
-  for (auto& root_node : root_nodes())
-    if (search<C>(root_node, target, on_touched, on_searched, on_child)) return true;
-  return false;
+  auto ptr = gcpp::deferred_ptr<graph_node>{};
+  for (auto& root_node : root_nodes()) {
+    ptr = search<C>(root_node, target, on_touched, on_searched, on_child);
+    if (ptr != nullptr) return ptr; 
+  }
+  return nullptr;
 }
 template<class Node, class Edge>
 template<class C, class OnTouched, class OnSearched, class OnChild>

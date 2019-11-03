@@ -108,12 +108,20 @@ append(Insertable& c, const Iterable& new_values)
 
 //
 // keys - returns a vector of all the keys of a map
+// values - returns a vector of all the values of a map
 //
 template<class Map, enable_if_p<is_map_v<Map>>...> inline constexpr
 std::vector<typename Map::key_type> keys(const Map& m)
 {
   auto r = std::vector<typename Map::key_type>{m.size()};
   for (auto& p : m) r.push_back(p.first);
+  return r;
+}
+template<class Map, enable_if_p<is_map_v<Map>>...> inline constexpr
+std::vector<typename Map::key_type> values(const Map& m)
+{
+  auto r = std::vector<typename Map::key_type>{m.size()};
+  for (auto& p : m) r.push_back(p.second);
   return r;
 }
 

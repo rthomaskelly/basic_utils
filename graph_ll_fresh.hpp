@@ -5,7 +5,7 @@
 #include <iostream>
 #include <boost/lexical_cast.hpp>
 
-#include "iterable_utils.hpp"
+#include "iterable_algorithms.hpp"
 #include "algorithm_extras.hpp"
 
 namespace ryk {

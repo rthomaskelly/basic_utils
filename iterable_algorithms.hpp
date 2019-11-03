@@ -217,7 +217,7 @@ template<class Iterable, class InsertIterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<InsertIterable>, iterator<Iterable>>
 replace(Iterable& c, const subtype<Iterable>& old_value, const InsertIterable& i)
 {
-  replace(c, old_value, i.begin(), i.end());
+  return replace(c, old_value, i.begin(), i.end());
 }
 
 //
@@ -254,10 +254,10 @@ erase_duplicates(Iterable& c, Compare compare)
 // reverse
 //
 template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, void>
+std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
 reverse(Iterable& c)
 {
-  std::reverse(c.begin(), c.end());
+  return std::reverse(c.begin(), c.end());
 }
 
 //
@@ -447,28 +447,6 @@ apply(Iterable c, Fn f)
 {
   return affect(c, f);
 }
-// morph requires a 'push' function to be implemented on the iterable type
-template<template<class> class Iterable, class T, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable<T>>, Iterable<std::result_of_t<Fn(T)>>>
-morph(const Iterable<T>& c, Fn f)
-{
-  Iterable<std::result_of_t<Fn(T)>> r; 
-  for (auto& t : c) push(r, f(t));
-  return r; 
-}
-
-//
-// tie - performs a function on each pair of two iterables
-// TODO: finish, currently does NOT work
-template<class Iterable0, class Iterable1, class R, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable0> && is_iterable_v<Iterable1>, R>
-tie(const Iterable0& c0, const Iterable1& c1, Fn f)
-{
-  auto i0 = c0.begin();
-  auto i1 = c1.begin();
-  for(; i0 < c0.end() && i1 < c1.end(); ++i0, ++i1) f(*i0, *i1);
-  return c0;
-}
 
 //
 // at and iterator_at - get (reference to) an element at an index or an iterator
@@ -621,79 +599,6 @@ median(Iterable c)
 {
   return affect_median(c);
 }
-
-//
-// experimenting from here on
-//
-
-//
-// circle_index implements python-like negative indices
-//
-template<class Sizeable> inline constexpr
-subtype<Sizeable> circle_index(Sizeable& c, int64_t index)
-{
-  // the following is equivalent to:
-  //   if (index < 0) index + c.size();
-  //   else index;
-  // but the bit-wise operations and integer multiplication s/b done in a few cycles
-
-  return at(c, index + c.size() * (index >> 63));
-}
-
-template<class Iterable, class Pred>
-std::enable_if_t<is_iterable<Iterable>::value, std::vector<subtype<Iterable>>>
-which(const Iterable& c, Pred p) {
-  std::vector<subtype<Iterable>> ret;
-  for (auto& each : c) if (p(each)) ret.push_back(each);
-  return ret;
-}
-template<class Iterable, bool(*F)(const subtype<Iterable>&)>
-std::enable_if_t<is_iterable<Iterable>::value, std::vector<subtype<Iterable>>>
-which(const Iterable& c) {
-  std::vector<subtype<Iterable>> ret;
-  for (auto& each : c) if (F(each)) ret.push_back(each);
-  return ret;
-}
-
-//template<class T, template<class> class Iterable1, template<class> class Iterable2> inline constexpr
-//std::enable_if_t<is_iterable<Iterable1<T>>::value && is_iterable<Iterable2<uint64_t>>::value, Iterable2<T>>
-//slice(const Iterable1<T>& c, const Iterable2<uint64_t> indices) {
-//  Iterable2<T> ret;
-//  // for (uint64_t n : indices) ret[
-//  return ret;
-//}
-
-template<class Indexable, class IndicesIterable> inline constexpr
-std::enable_if_t<is_indexable_v<Indexable> && is_iterable_v<IndicesIterable>
-                 && std::is_arithmetic_v<subtype<IndicesIterable>>, Indexable>
-slice(const Indexable& c, const IndicesIterable& indices)
-{
-  Indexable r(indices.size());
-  std::size_t j = 0;
-  for (auto i : indices) r[j++] = c[i]; 
-  return r;
-}
-
-
-template<class T, template<class, class alloc = std::allocator<T>> class Iterable, class Pred>
-std::enable_if_t<is_iterable<Iterable<T>>::value, std::vector<T>>
-select(const Iterable<T>& c, Pred p) {
-  std::vector<T> ret;
-  for (auto& each : c) if (p(each)) ret.push_back(each);
-  return ret;
-}
-
-// define push:
-// push(container, T) -> container::iterator
-// for vector does pushback
-// for array does pushback (requires keeping track of sizeused)
-// for list appends back
-// for map, hashmap does insert
-// for set(sorted unique vector) does insert
-// returns an iterator
-
-
-
 
 } // namespace ryk
 

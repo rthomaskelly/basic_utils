@@ -3,6 +3,7 @@
 
 #include "boxed_types.hpp"
 #include "traits.hpp"
+#include "functors.hpp"
 #include "algorithm_extras.hpp"
 #include "iterable_algorithms.hpp"
 #include "predicates.hpp"

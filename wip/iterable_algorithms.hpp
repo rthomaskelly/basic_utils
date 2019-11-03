@@ -43,7 +43,7 @@ subtype<Sizeable> circle_index(Sizeable& c, int64_t index)
   // the following is equivalent to:
   //   if (index < 0) index + c.size();
   //   else index;
-  // but the bit-wise operations and integer multiplication s/b done in a few cycles
+  // but the bit-wise operation of multiplying by the sign bit s/b done in a few cycles
 
   return at(c, index + c.size() * (index >> 63));
 }
@@ -90,4 +90,5 @@ select(const Iterable<T>& c, Pred p) {
   for (auto& each : c) if (p(each)) ret.push_back(each);
   return ret;
 }
+
 } // namespace

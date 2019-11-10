@@ -31,11 +31,46 @@ find(Map& m, const typename Map::key_type& k)
 {
   return m.find(k);
 }
-template<class Iterable> inline constexpr
+template<class Iterable, class T> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> && !is_map_v<Iterable>, iterator<Iterable>>
-find(Iterable& c, const subtype<Iterable>& t)
+find(Iterable& c, const T& t)
 {
   return std::find(c.begin(), c.end(), t);
+}
+//
+// this find variant looks for the continuous values supplied over 'search_for' first & last
+// to be continuously appearing within 'search_in'
+//
+template<class Iterator1, class Iterator2> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator1> && is_iterator_v<Iterator2>, Iterator1>
+find_within(Iterator1 search_in_first, Iterator1 search_in_last,
+            const Iterator2 search_for_first, const Iterator2 search_for_last)
+{
+  for (; search_in_first != search_in_last; ++search_in_first) {
+    if (*search_for_first == *search_in_first) {
+      auto r = search_in_first;
+
+      for (auto iter = search_for_first; 
+           (iter != search_for_last) && (search_in_first != search_in_last);
+           ++iter, ++search_in_first) 
+      {
+        if (*iter != *search_in_first) {
+          --search_in_first; // decrement this so we can rescan it next outerloop iteration 
+          break;
+        }
+        else if ((iter == search_for_last) && (*iter == *search_in_first)) {
+          return r;
+        }
+      } 
+    }    
+  }
+  return search_in_last; 
+}
+template<class Iterable1, class Iterable2> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>, iterator<Iterable1>>
+find_within(Iterable1& search_in, const Iterable2& search_for)
+{
+  return find_within(search_in.begin(), search_in.end(), search_for.begin(), search_for.end());
 }
 template<class Iterable, class Pred> inline constexpr
 std::enable_if_t<is_iterable<Iterable>::value, iterator<Iterable>>
@@ -58,9 +93,10 @@ size_t find_if_index(Iterator begin, Iterator end, Fn f)
 {
   return std::find_if(begin, end, f) - begin;
 }
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
-find_index(Iterable& c, const subtype<Iterable>& t)
+template<class Iterable, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && !std::is_same_v<T, iterator<Iterable>>, 
+                 distance<Iterable>>
+find_index(Iterable& c, const T& t)
 {
   return find(c, t) - c.begin();
 }
@@ -76,9 +112,10 @@ find_index_if(Iterable& c, Pred pred)
 {
   return find_if_index(c, pred);
 }
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
-index_of(Iterable& c, const subtype<Iterable>& t)
+template<class Iterable, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && !std::is_same_v<T, iterator<Iterable>>, 
+                 distance<Iterable>>
+index_of(Iterable& c, const T& t)
 {
   return find_index(c, t);
 }
@@ -90,28 +127,35 @@ index_of_if(Iterable& c, Pred pred)
 }
 template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
-index_of(const Iterable& c, const iterator<Iterable>& i)
+index_of(const Iterable& c, const iterator<Iterable> i)
 {
   return i - c.begin();
 }
 
 //
 // accumulate and reduce (reduce not yet available in GCC <=9.2)
+// please note that its probably proper to have the return type 
+// of the second accumulate variation be:
+//   std::result_of_t<Fn(T, subtype<Iterable>)>
+// but the std::accumulate it calls just returns T, the type of 'init'
 //
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-accumulate(const Iterable& c, subtype<Iterable> init = subtype<Iterable>{})
+template<class Iterable, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> &&
+                 !binary_function_v<T, subtype<Iterable>, subtype<Iterable>>, T>
+accumulate(const Iterable& c, T init = subtype<Iterable>{})
 {
   return std::accumulate(c.begin(), c.end(), init);
 }
-template<class Iterable, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-accumulate(const Iterable& c, subtype<Iterable> init, Fn f)
+template<class Iterable, class T, class Fn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, T>
+accumulate(const Iterable& c, T init, Fn f)
 {
   return std::accumulate(c.begin(), c.end(), init, f);
 }
 template<class Iterable, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
+std::enable_if_t<is_iterable_v<Iterable> &&
+                 binary_function_v<Fn, subtype<Iterable>, subtype<Iterable>>,
+                 subtype<Iterable>>
 accumulate(const Iterable& c, Fn f)
 {
   return std::accumulate(c.begin(), c.end(), subtype<Iterable>{}, f);
@@ -337,29 +381,6 @@ minmax(Iterable& c, Compare compare)
 }
 
 //
-// has and has_if (not STL)
-//
-template<class Map> inline constexpr
-std::enable_if_t<is_map_v<Map>, bool>
-has(const Map& m, const typename Map::key_type& k)
-{
-  return find(m, k) != m.end();
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable> && !is_map_v<Iterable>, bool>
-has(const Iterable& c, const subtype<Iterable>& t)
-{
-  return find(c, t) != c.end();
-}
-template<class Iterable, class Pred> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, bool>
-has_if(Iterable& c, Pred pred)
-{
-  return find_if(c, pred) != c.end();
-}
-
-
-//
 // all and all_of
 //
 template<class Iterable> inline constexpr
@@ -426,13 +447,157 @@ count_if(const Iterable& c, UnaryPredicate p)
 }
 
 //
+// copy and copy_if
+//
+template<class Iterator, class OutputIterator> inline constexpr
+std::enable_if_t<is_pointerlike_v<Iterator> && !is_iterable_v<Iterator>, OutputIterator>
+copy(Iterator it, std::size_t count, OutputIterator out)
+{
+  return std::copy(it, it + count, out);
+}
+template<class Iterable, class OutputIterator> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, OutputIterator>
+copy(const Iterable& c, OutputIterator out)
+{
+  return std::copy(c.begin(), c.end(), out);
+}
+template<class Iterable, class OutputIterator> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, OutputIterator>
+copy(const Iterable& c, std::size_t count, OutputIterator out)
+{
+  return std::copy(c.begin(), c.begin() + count, out);
+}
+template<class Iterator, class OutputIterator, class UnaryPredicate> inline constexpr
+std::enable_if_t<is_pointerlike_v<Iterator> && !is_iterable_v<Iterator>, OutputIterator>
+copy_if(Iterator it, std::size_t count, OutputIterator out, UnaryPredicate f)
+{
+  return std::copy_if(it, it + count, out, f);
+}
+template<class Iterable, class OutputIterator, class UnaryPredicate> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, OutputIterator>
+copy_if(const Iterable& c, OutputIterator out, UnaryPredicate f)
+{
+  return std::copy_if(c.begin(), c.end(), out, f);
+}
+template<class Iterable, class OutputIterator, class UnaryPredicate> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, OutputIterator>
+copy_if(const Iterable& c, std::size_t count, OutputIterator out, UnaryPredicate f)
+{
+  return std::copy_if(c.begin(), count, out, f);
+}
+
+//
+// has and has_if (not STL)
+//
+template<class Map> inline constexpr
+std::enable_if_t<is_map_v<Map>, bool>
+has(const Map& m, const typename Map::key_type& k)
+{
+  return find(m, k) != m.end();
+}
+template<class Iterable> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && !is_map_v<Iterable>, bool>
+has(const Iterable& c, const subtype<Iterable>& t)
+{
+  return find(c, t) != c.end();
+}
+template<class Iterable, class Pred> inline constexpr
+std::enable_if_t<is_iterable<Iterable>::value, bool>
+has_if(Iterable& c, Pred pred)
+{
+  return find_if(c, pred) != c.end();
+}
+
+//
+// slice (not STL)
+//
+template<class Iterator, class OutputIterator> inline constexpr
+OutputIterator
+slice(Iterator begin, Iterator end, OutputIterator out)
+{
+  for (; begin != end; ++begin, ++out) {
+    *out = *begin;
+  }
+  return out;
+}
+template<class Iterator, class OutputIterator> inline constexpr
+OutputIterator
+slice(Iterator begin, std::size_t count, OutputIterator out)
+{
+  return slice(begin, begin + count, out);
+}
+template<class Iterator, class IndexIterator, class OutputIterator> inline constexpr
+OutputIterator
+slice(Iterator begin, IndexIterator index_begin, IndexIterator index_end, OutputIterator out)
+{
+  for (; index_begin != index_end; ++index_begin, ++out) {
+    *out = *(begin + *index_begin);
+  }
+  return out; 
+}
+template<class Iterable, class IterableIndices, class OutputIterator> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<IterableIndices>, OutputIterator>
+slice(const Iterable& c, const IterableIndices& indices, OutputIterator out)
+{
+  return slice(c.begin(), indices.begin(), indices.end(), out);
+}
+template<class Iterable, class IterableIndices> inline constexpr
+Iterable& slice(const Iterable& c, const IterableIndices& indices, Iterable& the_slice) 
+{
+  slice(c, indices, the_slice.begin());
+  return the_slice;
+}
+ 
+//
 // wrapping std::transform
 // affect & apply - perform a function on every element with and without side effects
+// Note:
+// the last variation of transform and apply are in only different in that
+// transform over (Iterable, Fn) is more general than apply
+// because it allows changes of types
+// because of this it may be wise to rename the last variation of transform
+// apply, and thus avoid any confusion
 // 
 template<class Iterable, class OutputIterator, class Fn> inline constexpr
-OutputIterator transform(const Iterable& c, OutputIterator out, Fn f)
+std::enable_if_t<is_iterable_v<Iterable> && is_iterator_v<OutputIterator>, OutputIterator>
+transform(const Iterable& c, iterator<const Iterable> end, OutputIterator out, Fn f)
+{
+  return std::transform(c.begin(), end, out, f);
+}
+template<class Iterator, class OutputIterator, class Fn> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator> && is_iterator_v<OutputIterator>, OutputIterator>
+transform(Iterator it, std::size_t count, OutputIterator out, Fn f)
+{
+  return std::transform(it, it + count, out, f); 
+}
+template<class Iterable, class OutputIterator, class Fn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_iterator_v<OutputIterator>, OutputIterator>
+transform(const Iterable& c, std::size_t count, OutputIterator out, Fn f)
+{
+  return transform(c.begin(), count, out, f); 
+}
+template<class Iterable, class OutputIterator, class Fn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && !is_iterable_v<OutputIterator>, OutputIterator>
+transform(const Iterable& c, OutputIterator out, Fn f)
 {
   return std::transform(c.begin(), c.end(), out, f); 
+}
+template<class Iterable, class OutputIterable, class Fn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<OutputIterable>, OutputIterable&>
+transform(const Iterable& c, OutputIterable& out, Fn f)
+{
+  transform(c, inserter(out), f); 
+  return out;
+}
+//
+// Note the below won't work correctly for allocators or for dual-type containers such as map
+//
+template<template<class> class Iterable, class T, class Fn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable<T>>, Iterable<std::result_of_t<Fn(T)>>>
+transform(const Iterable<T>& c, Fn f)
+{
+  Iterable<std::result_of_t<Fn(T)>> r{c.size()};
+  return transform(c, r, f);
 }
 template<class Iterable, class Fn> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, Iterable&>

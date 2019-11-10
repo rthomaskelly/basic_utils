@@ -6,21 +6,25 @@
 
 namespace ryk {
 
-template<class Iterable, class... Ts, 
-         enable_if_p<is_iterable_v<Iterable> && !is_map_v<Iterable>>...> inline
+template<class Iterable, 
+         enable_if_p<is_iterable_v<Iterable> && !is_map_v<Iterable>
+                     && !is_string_v<Iterable>>...> inline
 std::ostream& operator<<(std::ostream& os, const Iterable& c)
 {
-  for (auto it = c.begin(); it != c.end() - 1; ++it) os << *it << " ";
-  os << *it; 
+  for (auto it = c.begin(); it != c.end(); ++it) {
+    os << *it;
+    if (it != c.end() - 1) os << " ";
+  }
   return os;
 }
-template<class Map, class... Ts, 
+template<class Map, 
          enable_if_p<is_iterable_v<Map> && is_map_v<Map>>...> inline
 std::ostream& operator<<(std::ostream& os, const Map& m)
 {
-  for (auto it = c.begin(); it != c.end() - 1; ++it)
-    os << it->first << " : " << it->second << ", ";
-  os << it->first << " : " << it->second; 
+  for (auto it = m.begin(); it != m.end(); ++it) {
+    os << it->first << " : " << it->second; 
+    if (it != m.end() - 1) os << ", ";
+  }
   return os;
 }
 

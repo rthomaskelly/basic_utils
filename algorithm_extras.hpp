@@ -1,8 +1,12 @@
 #ifndef ryk_algorithm_extras
 #define ryk_algorithm_extras
 
+#include <vector>
+#include <list>
 #include <stack>
 #include <queue>
+#include <set>
+#include <map>
 
 #include "traits.hpp"
 
@@ -72,6 +76,52 @@ void push(std::vector<T>& v, const T& t)
 // {
 //   for (auto& e : i) push(c, e);
 // }
+
+//
+// inserter() definitions return an insert iterator based on the container
+//
+template<class... Ts> inline
+std::back_insert_iterator<std::vector<Ts...>> inserter(std::vector<Ts...>& v)
+{
+  return std::back_inserter(v);
+}
+template<class... Ts> inline
+std::front_insert_iterator<std::deque<Ts...>> inserter(std::deque<Ts...>& d)
+{
+  return std::front_inserter(d);
+}
+template<class... Ts> inline
+std::insert_iterator<std::set<Ts...>> inserter(std::set<Ts...>& s)
+{
+  return std::inserter(s);
+}
+template<class... Ts> inline
+std::insert_iterator<std::multiset<Ts...>> inserter(std::multiset<Ts...>& s)
+{
+  return std::inserter(s);
+}
+template<class... Ts> inline
+std::insert_iterator<std::list<Ts...>> inserter(std::list<Ts...>& m)
+{
+  return std::inserter(m);
+}
+template<class... Ts> inline
+std::insert_iterator<std::map<Ts...>> inserter(std::map<Ts...>& m)
+{
+  return std::inserter(m);
+}
+template<class... Ts> inline
+std::insert_iterator<std::unordered_map<Ts...>> inserter(std::unordered_map<Ts...>& m)
+{
+  return std::inserter(m);
+}
+
+//
+// construct_with_size
+// sequence containers std::vector, std::deque, std::forward_list and std::list
+// all have by-size constructors, we'd like to take advantage of those when 
+// creating a new container generically
+
 
 //
 // insert

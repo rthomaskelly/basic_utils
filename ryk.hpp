@@ -9,5 +9,6 @@
 #include "predicates.hpp"
 #include "string_predicates.hpp"
 #include "ostream_operators.hpp"
+#include "string_conversions.hpp"
 
 #endif

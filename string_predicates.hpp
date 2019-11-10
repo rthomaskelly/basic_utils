@@ -4,6 +4,7 @@
 #include <cctype>
 #include <string>
 
+#include "traits.hpp"
 #include "iterable_algorithms.hpp"
 
 using std::string;
@@ -17,12 +18,6 @@ namespace ryk {
 // suffixed with -p. i.e. digitp spacep.
 // We'll offer all these choices.
 
-template<class T>
-struct is_string
-{
-  static constexpr bool value = is_iterable_v<T> && std::is_same_v<subtype<const T>, const char>;
-};
-template<class T> constexpr inline bool is_string_v = is_string<T>::value;
 
 //
 // is_uint(string) and its synonyms

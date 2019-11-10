@@ -1,6 +1,8 @@
 #ifndef ryk_traits_hpp
 #define ryk_traits_hpp
 
+#include <type_traits>
+
 namespace ryk {
 
 //
@@ -34,6 +36,32 @@ bool iterable(T t)
 }
 
 //
+// is_pointerlike<> typetrait with is_pointerlike_v definition
+//
+template<class T>
+decltype(++std::declval<T>(), 
+         void(),
+         std::declval<T>()++,
+         void(*std::declval<T>()),
+         std::true_type{})
+pointerlike_impl(int);
+template<class T> std::false_type pointerlike_impl(...);
+template<class T>
+using is_pointerlike = decltype(pointerlike_impl<T>(0));
+template<class T> inline constexpr bool is_pointerlike_v = is_pointerlike<T>::value;
+
+//
+// is_iterator<> typetrait
+//
+template<class T>
+struct is_iterator
+{
+  static constexpr bool value = is_pointerlike_v<T> && !is_iterable_v<T>;
+};
+template<class T> inline constexpr bool is_iterator_v = is_iterator<T>::value;
+
+
+//
 // iterator<> type and subtype<> of an iterable
 // also deref<> type
 //
@@ -49,6 +77,19 @@ template<class Container>
 using elementtype = subtype<Container>;
 template<class Container>
 using itemtype = subtype<Container>;
+
+//
+// has_subtype tests if a type T has a subtype of V
+// this trait is needed because using subtype<T> on a non-iterable T will not compile
+// it's used in the is_string<> trait below
+// 
+template<class T, class V>
+decltype(std::integral_constant<bool, std::is_same_v<std::remove_const_t<subtype<T>>, V>>{})
+has_subtype_impl(int);
+template<class T, class V> std::false_type has_subtype_impl(...);
+template<class T, class V>
+using has_subtype = decltype(has_subtype_impl<T,V>(0));
+template<class T, class V> inline constexpr bool has_subtype_v = has_subtype<T,V>::value;
 
 // 
 // is_indexable<> with is_indexable_v<> and indexable(T) definitions
@@ -90,6 +131,16 @@ constexpr bool map(T t)
 }
 
 //
+// is_string<> with is_string_v<> definition
+//
+template<class T>
+struct is_string
+{
+  static constexpr bool value = is_iterable_v<T> && has_subtype_v<T, char>;
+};
+template<class T> inline constexpr bool is_string_v = is_string<T>::value;
+
+//
 // distance type
 //
 template<class T>
@@ -107,6 +158,59 @@ template<class T> std::false_type insertable_impl(...);
 template<class T>
 using is_insertable = decltype(insertable_impl<T>(0));
 template<class T> inline constexpr bool is_insertable_v = is_insertable<T>::value;
+
+
+//
+// C++-20 Concepts
+//
+
+//
+// invocable
+//
+// (Does not compile)
+// template<class F, class... Args>
+// decltype(std::invoke(std::forward<F>(std::declval<F&&>()),
+//                      std::forward<Args>(std::declval<Args&&...>())),
+//          void(),
+//          std::true_type{}) invocable_impl(int);
+// template<class F, class... Args> std::false_type invocable_impl(...);
+// template<class F, class... Args>
+// using invocable = decltype(invocable_impl<F, Args>(0));
+// template<class F, class... Args>
+// inline constexpr bool invocable_v = invocable<F, Args>::value;
+
+//
+// Binary function
+//
+template<class F, class A, class B>
+decltype(std::invoke(std::forward<F>(std::declval<F&&>()), 
+                     std::forward<A>(std::declval<A&&>()),
+                     std::forward<B>(std::declval<B&&>())),
+         void(),
+         std::true_type{}) binary_function_impl(int);
+template<class F, class A, class B> std::false_type binary_function_impl(...);
+template<class F, class A, class B>
+using binary_function = decltype(binary_function_impl<F, A, B>(0));
+template<class F, class A, class B>
+inline constexpr bool binary_function_v = binary_function<F, A, B>::value;
+
+/*
+template <class From, class To>
+decltype(
+concept convertible_to =
+  std::is_convertible_v<From, To> &&
+  requires(From (&f)()) {
+    static_cast<To>(f());
+  };
+
+template <class T, class U>
+inline constexpr bool common_reference_with =
+  std::same_as<std::common_reference_t<T, U>, std::common_reference_t<U, T>> &&
+  std::convertible_to<T, std::common_reference_t<T, U>> &&
+  std::convertible_to<U, std::common_reference_t<T, U>>;
+  std::is_convertible_v<T, std::common_reference_t<T, U>> &&
+  std::is_convertible_v<U, std::common_reference_t<T, U>>;
+*/
 
 } // namespace ryk
 

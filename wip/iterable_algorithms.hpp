@@ -11,28 +11,53 @@
 
 namespace ryk {
 
-// morph requires a 'push' function to be implemented on the iterable type
-template<template<class> class Iterable, class T, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable<T>>, Iterable<std::result_of_t<Fn(T)>>>
-morph(const Iterable<T>& c, Fn f)
+//
+// combine - performs a function on each pair of two iterables
+// another name might be for_each_pair
+//
+template<class InputIterator1, class InputIterator2, class OutputIterator, class BinaryFn>
+inline constexpr
+std::enable_if_t<is_iterator_v<InputIterator1> && is_iterator_v<InputIterator2>
+                 && is_iterator_v<OutputIterator> 
+                 && is_binary_function_v<BinaryFn, deref<InputIterator1>, deref<InputIterator2>>,
+                 OutputIterator>
+combine(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2,
+        InputIterator2 last2, OutputIterator out, BinaryFn f)
 {
-  Iterable<std::result_of_t<Fn(T)>> r; 
-  for (auto& t : c) push(r, f(t));
-  return r; 
+  while (first1 != last1 && first2 != last2) *out++ = f(*first1++, *first2++);
+  return out;
+}
+template<class Iterable1, class Iterable2, class OutputIterator, class BinaryFn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2> 
+                 && is_iterator_v<OutputIterator> 
+                 && is_binary_function_v<BinaryFn, subtype<Iterable1>, subtype<Iterable2>>, 
+                 OutputIterator>
+combine(const Iterable1& c1, const Iterable2& c2, OutputIterator out, BinaryFn f)
+{
+  return combine(c1.begin(), c1.end(), c2.begin(), c2.end(), out, f);
+}
+template<class Iterable1, class Iterable2, class OutputIterable, class BinaryFn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2> 
+                 && is_iterable_v<OutputIterable> 
+                 && is_binary_function_v<BinaryFn, subtype<Iterable1>, subtype<Iterable2>>, 
+                 OutputIterable&>
+combine(const Iterable1& c1, const Iterable2& c2, OutputIterable& out, BinaryFn f)
+{
+  combine(c1, c2, out.begin(), f);
+  return out;
+}
+template<template<class> class Iterable1, class Iterable2, class BinaryFn, class Ts..> 
+inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1<Ts...>> && is_iterable_v<Iterable2> 
+                 && is_binary_fn_v<BinaryFn>, 
+                 Iterable1<std::result_of_t<BinaryFn(subtype<Iterable1>, subtype<Iterable2>)>>>
+combine(const Iterable1& c1, const Iterable2& c2, BinaryFn f)
+{
+  auto r = construct_with_size(std::min(c1.size(), c2.size()), 
+             Iterable1<std::result_of_t<BinaryFn(subtype<Iterable1>, subtype<Iterable2>)>>);
+  return combine(c1, c2, r, f);
 }
 
-//
-// tie - performs a function on each pair of two iterables
-// TODO: finish, currently does NOT work
-template<class Iterable0, class Iterable1, class R, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable0> && is_iterable_v<Iterable1>, R>
-tie(const Iterable0& c0, const Iterable1& c1, Fn f)
-{
-  auto i0 = c0.begin();
-  auto i1 = c1.begin();
-  for(; i0 < c0.end() && i1 < c1.end(); ++i0, ++i1) f(*i0, *i1);
-  return c0;
-}
 
 //
 // circle_index implements python-like negative indices

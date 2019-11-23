@@ -2,6 +2,7 @@
 #define ryk_traits_hpp
 
 #include <type_traits>
+#include <functional>
 
 namespace ryk {
 
@@ -179,6 +180,40 @@ template<class T> inline constexpr bool is_insertable_v = is_insertable<T>::valu
 // template<class F, class... Args>
 // inline constexpr bool invocable_v = invocable<F, Args>::value;
 
+
+//
+// Equality comparable
+//
+template<class T, class U>
+decltype(std::declval<std::remove_reference_t<T>&>() == 
+           std::declval<std::remove_reference_t<U>&>(),
+         std::declval<std::remove_reference_t<T>&>() != 
+           std::declval<std::remove_reference_t<U>&>(), 
+         std::declval<std::remove_reference_t<U>&>() == 
+           std::declval<std::remove_reference_t<T>&>(),
+         std::declval<std::remove_reference_t<U>&>() != 
+           std::declval<std::remove_reference_t<T>&>(),
+         std::true_type{}) is_equality_comparable_impl(int);
+template<class T, class U> std::false_type is_equality_comparable_impl(...);
+template<class T, class U>
+using is_equality_comparable = decltype(is_equality_comparable_impl<T, U>(0));
+template<class T, class U>
+static constexpr bool is_equality_comparable_v = is_equality_comparable<T, U>::value;
+
+//
+// Unary function
+//
+template<class F, class A>
+decltype(std::invoke(std::forward<F>(std::declval<F&&>()), 
+                     std::forward<A>(std::declval<A&&>())),
+         void(),
+         std::true_type{}) unary_function_impl(int);
+template<class F, class A> std::false_type unary_function_impl(...);
+template<class F, class A>
+using is_unary_function = decltype(unary_function_impl<F, A>(0));
+template<class F, class A>
+inline constexpr bool is_unary_function_v = is_unary_function<F, A>::value;
+
 //
 // Binary function
 //
@@ -190,9 +225,9 @@ decltype(std::invoke(std::forward<F>(std::declval<F&&>()),
          std::true_type{}) binary_function_impl(int);
 template<class F, class A, class B> std::false_type binary_function_impl(...);
 template<class F, class A, class B>
-using binary_function = decltype(binary_function_impl<F, A, B>(0));
+using is_binary_function = decltype(binary_function_impl<F, A, B>(0));
 template<class F, class A, class B>
-inline constexpr bool binary_function_v = binary_function<F, A, B>::value;
+inline constexpr bool is_binary_function_v = is_binary_function<F, A, B>::value;
 
 /*
 template <class From, class To>

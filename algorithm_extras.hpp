@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <list>
+#include <forward_list>
 #include <stack>
 #include <queue>
 #include <set>
@@ -86,6 +87,16 @@ std::back_insert_iterator<std::vector<Ts...>> inserter(std::vector<Ts...>& v)
   return std::back_inserter(v);
 }
 template<class... Ts> inline
+std::front_insert_iterator<std::list<Ts...>> inserter(std::list<Ts...>& m)
+{
+  return std::front_inserter(m);
+}
+template<class... Ts> inline
+std::front_insert_iterator<std::forward_list<Ts...>> inserter(std::forward_list<Ts...>& m)
+{
+  return std::front_inserter(m);
+}
+template<class... Ts> inline
 std::front_insert_iterator<std::deque<Ts...>> inserter(std::deque<Ts...>& d)
 {
   return std::front_inserter(d);
@@ -99,11 +110,6 @@ template<class... Ts> inline
 std::insert_iterator<std::multiset<Ts...>> inserter(std::multiset<Ts...>& s)
 {
   return std::inserter(s);
-}
-template<class... Ts> inline
-std::insert_iterator<std::list<Ts...>> inserter(std::list<Ts...>& m)
-{
-  return std::inserter(m);
 }
 template<class... Ts> inline
 std::insert_iterator<std::map<Ts...>> inserter(std::map<Ts...>& m)
@@ -121,6 +127,66 @@ std::insert_iterator<std::unordered_map<Ts...>> inserter(std::unordered_map<Ts..
 // sequence containers std::vector, std::deque, std::forward_list and std::list
 // all have by-size constructors, we'd like to take advantage of those when 
 // creating a new container generically
+template<template<class> class Iterable, class... Ts>
+struct is_sequence
+{
+  static constexpr bool value = is_iterable_v<Iterable> && 
+                                (std::is_same_v<Iterable<Ts...>, std::vector<Ts...>> ||
+                                std::is_same_v<Iterable<Ts...>, std::deque<Ts...>> ||
+                                std::is_same_v<Iterable<Ts...>, std::list<Ts...>> ||
+                                std::is_same_v<Iterable<Ts...>, std::forward_list<Ts...>>);
+};
+template<template<class> class Iterable, class... Ts>
+static constexpr bool is_sequence_v = is_sequence<Iterable, Ts...>::value;
+
+template<template<class> class Iterable, class... Ts>
+struct is_hashmap
+{
+  static constexpr bool value = is_iterable_v<Iterable> && 
+                              std::is_same_v<Iterable<Ts...>, std::unordered_map<Ts...>>;
+};
+template<template<class> class Iterable, class... Ts>
+static constexpr bool is_hashmap_v = is_hashmap<Iterable, Ts...>::value;
+
+template<class Sequence> inline constexpr
+std::enable_if_t<is_sequence_v<Sequence>, Sequence>
+construct_with_size(std::size_t size)
+{
+  return Sequence{size};
+}
+
+// template<class... Ts> inline
+// std::vector<Ts...> construct_with_size(std::size_t size, std::vector<Ts...>)
+// {
+//   return std::vector<Ts...>{size};
+// }
+// template<class... Ts> inline
+// std::deque<Ts...> construct_with_size(std::size_t size, std::deque<Ts...>)
+// {
+//   return std::deque<Ts...>{size};
+// }
+// template<class... Ts> inline
+// std::list<Ts...> construct_with_size(std::size_t size, std::list<Ts...>)
+// {
+//   return std::list<Ts...>{size};
+// }
+// template<class... Ts> inline
+// std::forward_list<Ts...> construct_with_size(std::size_t size, std::forward_list<Ts...>)
+// {
+//   return std::forward_list<Ts...>{size};
+// }
+template<class... Ts> inline
+std::unordered_map<Ts...> construct_with_size(std::size_t size, std::unordered_map<Ts...>)
+{
+  return std::unordered_map<Ts...>{size};
+}
+template<template<class> class Iterable, class... Ts> inline
+std::enable_if_t<!is_sequence_v<Iterable, Ts...> && !is_hashmap_v<Iterable, Ts...>,
+                 Iterable<Ts...>>
+construct_with_size(std::size_t size, Iterable<Ts...>)
+{
+  return Iterable<Ts...>{};
+}
 
 
 //

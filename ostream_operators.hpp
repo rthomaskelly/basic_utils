@@ -11,10 +11,11 @@ template<class Iterable,
                      && !is_string_v<Iterable>>...> inline
 std::ostream& operator<<(std::ostream& os, const Iterable& c)
 {
-  for (auto it = c.begin(); it != c.end(); ++it) {
-    os << *it;
-    if (it != c.end() - 1) os << " ";
-  }
+  //for (auto it = c.begin(); it != c.end(); ++it) {
+  //  os << *it;
+  //  if (it != c.end() - 1) os << " ";
+  //}
+  print(c);
   return os;
 }
 template<class Map, 

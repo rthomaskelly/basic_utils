@@ -145,7 +145,7 @@ template<class T> inline constexpr bool is_string_v = is_string<T>::value;
 // distance type
 //
 template<class T>
-using distance = decltype(std::declval<T&>().end() - std::declval<T&>().begin());
+using distance = decltype(std::distance(std::declval<T&>().begin(), std::declval<T&>().end()));
 
 //
 // insertable
@@ -159,6 +159,27 @@ template<class T> std::false_type insertable_impl(...);
 template<class T>
 using is_insertable = decltype(insertable_impl<T>(0));
 template<class T> inline constexpr bool is_insertable_v = is_insertable<T>::value;
+
+//
+// is_pair
+//
+template<class>
+struct is_pair : std::false_type {};
+template<class T, class U>
+struct is_pair<std::pair<T, U>> : std::true_type {};
+
+template<class T> inline constexpr bool is_pair_v = is_pair<T>::value;
+
+
+//
+// is_pair_iterator - used to determine if iterator is for a map
+//
+template<class T>
+struct is_pair_iterator
+{
+  static constexpr bool value = is_pair_v<std::decay_t<deref<T>>> && is_iterator_v<T>;
+};
+template<class T> inline constexpr bool is_pair_iterator_v = is_pair_iterator<T>::value;
 
 
 //

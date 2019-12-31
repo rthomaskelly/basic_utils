@@ -79,6 +79,24 @@ void push(std::vector<T>& v, const T& t)
 // }
 
 //
+// value_of - gets the value either by derefercing an iterator or
+//            deref'ing the pair iterator and taking .second
+//
+template<class Iterator> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator> && !is_pair_iterator_v<Iterator>, deref<Iterator>>
+value_of(Iterator it)
+{
+  return *it;
+}
+template<class Iterator> inline constexpr
+std::enable_if_t<is_pair_iterator_v<Iterator>, deref<Iterator>>
+value_of(Iterator it)
+{
+  return it->second;
+}
+
+
+//
 // inserter() definitions return an insert iterator based on the container
 //
 template<class... Ts> inline
@@ -87,9 +105,9 @@ std::back_insert_iterator<std::vector<Ts...>> inserter(std::vector<Ts...>& v)
   return std::back_inserter(v);
 }
 template<class... Ts> inline
-std::front_insert_iterator<std::list<Ts...>> inserter(std::list<Ts...>& m)
+std::back_insert_iterator<std::list<Ts...>> inserter(std::list<Ts...>& m)
 {
-  return std::front_inserter(m);
+  return std::back_inserter(m);
 }
 template<class... Ts> inline
 std::front_insert_iterator<std::forward_list<Ts...>> inserter(std::forward_list<Ts...>& m)
@@ -97,29 +115,29 @@ std::front_insert_iterator<std::forward_list<Ts...>> inserter(std::forward_list<
   return std::front_inserter(m);
 }
 template<class... Ts> inline
-std::front_insert_iterator<std::deque<Ts...>> inserter(std::deque<Ts...>& d)
+std::back_insert_iterator<std::deque<Ts...>> inserter(std::deque<Ts...>& d)
 {
-  return std::front_inserter(d);
+  return std::back_inserter(d);
 }
 template<class... Ts> inline
 std::insert_iterator<std::set<Ts...>> inserter(std::set<Ts...>& s)
 {
-  return std::inserter(s);
+  return std::inserter(s, s.end());
 }
 template<class... Ts> inline
 std::insert_iterator<std::multiset<Ts...>> inserter(std::multiset<Ts...>& s)
 {
-  return std::inserter(s);
+  return std::inserter(s, s.end());
 }
 template<class... Ts> inline
 std::insert_iterator<std::map<Ts...>> inserter(std::map<Ts...>& m)
 {
-  return std::inserter(m);
+  return std::inserter(m, m.end());
 }
 template<class... Ts> inline
 std::insert_iterator<std::unordered_map<Ts...>> inserter(std::unordered_map<Ts...>& m)
 {
-  return std::inserter(m);
+  return std::inserter(m, m.end());
 }
 
 //
@@ -148,12 +166,12 @@ struct is_hashmap
 template<template<class> class Iterable, class... Ts>
 static constexpr bool is_hashmap_v = is_hashmap<Iterable, Ts...>::value;
 
-template<class Sequence> inline constexpr
-std::enable_if_t<is_sequence_v<Sequence>, Sequence>
-construct_with_size(std::size_t size)
-{
-  return Sequence{size};
-}
+// template<class Sequence> inline constexpr
+// std::enable_if_t<is_sequence_v<Sequence>, Sequence>
+// construct_with_size(std::size_t size)
+// {
+//  return Sequence{size};
+// }
 
 // template<class... Ts> inline
 // std::vector<Ts...> construct_with_size(std::size_t size, std::vector<Ts...>)
@@ -180,13 +198,13 @@ std::unordered_map<Ts...> construct_with_size(std::size_t size, std::unordered_m
 {
   return std::unordered_map<Ts...>{size};
 }
-template<template<class> class Iterable, class... Ts> inline
-std::enable_if_t<!is_sequence_v<Iterable, Ts...> && !is_hashmap_v<Iterable, Ts...>,
-                 Iterable<Ts...>>
-construct_with_size(std::size_t size, Iterable<Ts...>)
-{
-  return Iterable<Ts...>{};
-}
+// template<template<class> class Iterable, class... Ts> inline
+// std::enable_if_t<!is_sequence_v<Iterable, Ts...> && !is_hashmap_v<Iterable, Ts...>,
+//                  Iterable<Ts...>>
+// construct_with_size(std::size_t size, Iterable<Ts...>)
+// {
+//   return Iterable<Ts...>{};
+// }
 
 
 //
@@ -225,6 +243,7 @@ append(Insertable& c, const Iterable& new_values)
 //
 // keys - returns a vector of all the keys of a map
 // values - returns a vector of all the values of a map
+// TODO: this should be replaed by a view
 //
 template<class Map, enable_if_p<is_map_v<Map>>...> inline constexpr
 std::vector<typename Map::key_type> keys(const Map& m)

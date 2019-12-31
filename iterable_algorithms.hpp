@@ -3,13 +3,18 @@
 
 #include <algorithm>
 #include <numeric>
-#include <set>
-#include <vector>
 
 #include "traits.hpp"
 #include "predicates.hpp"
+#include "algorithm_extras.hpp"
 
 namespace ryk {
+
+//
+// 20191205 TODO: the end of file has 'affect' and 'apply' as 'transfrom' variants.
+// these probably need to be renamed. the 'at' functions at the end of file might not be useful.
+//
+
 
 //
 // STL wrappers and extras
@@ -53,7 +58,7 @@ find_if(Iterable& c, Unary f)
 template<class Iterator, class T> inline constexpr
 size_t find_index(Iterator begin, Iterator end, const T& t)
 {
-  return std::find(begin, end, t) - begin;
+  return std::distance(begin, std::find(begin, end, t));
 }
 template<class Iterator, class T> inline constexpr
 size_t index_of(Iterator begin, Iterator end, const T& t)
@@ -63,20 +68,19 @@ size_t index_of(Iterator begin, Iterator end, const T& t)
 template<class Iterator, class Fn> inline constexpr
 size_t find_if_index(Iterator begin, Iterator end, Fn f)
 {
-  return std::find_if(begin, end, f) - begin;
+  return std::distance(begin, std::find_if(begin, end, f));
 }
 template<class Iterable, class T> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable> && !std::is_same_v<T, iterator<Iterable>>, 
-                 distance<Iterable>>
+std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
 find_index(Iterable& c, const T& t)
 {
-  return find(c, t) - c.begin();
+  return std::distance(c.begin(), find(c, t));
 }
 template<class Iterable, class Pred> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
 find_if_index(Iterable& c, Pred pred)
 {
-  return find_if(c, pred) - c.begin();
+  return std::distance(c.begin(), find_if(c, pred));
 }
 template<class Iterable, class Pred> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
@@ -85,8 +89,7 @@ find_index_if(Iterable& c, Pred pred)
   return find_if_index(c, pred);
 }
 template<class Iterable, class T> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable> && !std::is_same_v<T, iterator<Iterable>>, 
-                 distance<Iterable>>
+std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
 index_of(Iterable& c, const T& t)
 {
   return find_index(c, t);
@@ -99,9 +102,28 @@ index_of_if(Iterable& c, Pred pred)
 }
 template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
-index_of(const Iterable& c, const iterator<Iterable> i)
+index_of(const Iterable& c, const iterator<const Iterable> i)
 {
-  return i - c.begin();
+  return std::distance(c.begin(), i);
+}
+
+//
+// find_end - is std::search but returns the last match
+//
+template<class Iterable1, class Iterable2> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>, iterator<Iterable1>>
+find_end(Iterable1& search_in, const Iterable2& search_for)
+{
+  return std::find_end(search_in.begin(), search_in.end(), search_for.begin(), search_for.end());
+}
+template<class Iterable1, class Iterable2, class BinaryFn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>
+                 && is_binary_function_v<BinaryFn, subtype<Iterable1>, subtype<Iterable2>>, 
+                 iterator<Iterable1>>
+find_end(Iterable1& search_in, const Iterable2& search_for, BinaryFn f)
+{
+  return std::find_end(search_in.begin(), search_in.end(),
+                       search_for.begin(), search_for.end(), f);
 }
 
 //
@@ -122,6 +144,42 @@ search(Iterable1& search_in, const Iterable2& search_for, BinaryFn f)
   return std::search(search_in.begin(), search_in.end(), search_for.begin(), search_for.end(), f);
 }
 
+//
+// mismatch - finds first mismatching pair of values in two iterables
+//
+template<class Iterable1, class Iterable2> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>, 
+                 std::pair<iterator<Iterable1>, iterator<Iterable2>>>
+mismatch(Iterable1& lhs, Iterable2& rhs)
+{
+  return std::mismatch(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+}
+template<class Iterable1, class Iterable2, class BinaryFn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>
+                 && is_binary_function_v<BinaryFn, subtype<Iterable1>, subtype<Iterable2>>, 
+                 std::pair<iterator<Iterable1>, iterator<Iterable2>>>
+mismatch(Iterable1& lhs, Iterable2& rhs, BinaryFn f)
+{
+  return std::mismatch(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), f);
+}
+
+//
+// equal - determines if the two iterables are equal 
+//
+template<class Iterable1, class Iterable2> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>, bool>
+equal(Iterable1& lhs, Iterable2& rhs)
+{
+  return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+}
+template<class Iterable1, class Iterable2, class BinaryFn> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>
+                 && is_binary_function_v<BinaryFn, subtype<Iterable1>, subtype<Iterable2>>, 
+                 bool>
+equal(Iterable1& lhs, Iterable2& rhs, BinaryFn f)
+{
+  return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), f);
+}
 
 //
 // accumulate and reduce (reduce not yet available in GCC <=9.2)
@@ -129,13 +187,61 @@ search(Iterable1& search_in, const Iterable2& search_for, BinaryFn f)
 // of the second accumulate variation be:
 //   std::result_of_t<Fn(T, subtype<Iterable>)>
 // but the std::accumulate it calls just returns T, the type of 'init'
+
 //
+// Bringing std::accumulate functionality into ryk namespace - see next note
+//
+template<class Iterator> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator>, std::decay_t<deref<Iterator>>>
+accumulate(Iterator first, Iterator last, std::decay_t<deref<Iterator>> init)
+{
+  return std::accumulate(first, last, init);
+}
+template<class Iterator, class BinaryFn> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator> && is_binary_function_v<BinaryFn>,
+                 std::decay_t<deref<Iterator>>>
+accumulate(Iterator first, Iterator last, std::decay_t<deref<Iterator>> init, BinaryFn f)
+{
+  return std::accumulate(first, last, init, f);
+}
+//
+// A note for the next two signatures - the std:: signature kind of sucks. It requires there 
+// to be an init value that is not within the sequence itself. 
+// We typically don't actually want this. 
+// The problem is the first signature is ambiguous with the std:: signature with 'T init'
+// so have to explicity use ryk:: or std:: namespaces if bringing them both in.
+//
+template<class Iterator, class BinaryFn, 
+         class Subtype = std::decay_t<deref<Iterator>>> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator> 
+                 && is_binary_function_v<BinaryFn, Subtype, Subtype>, 
+                 Subtype>
+accumulate(Iterator first, Iterator last, BinaryFn f)
+{
+  if (first != last) {
+    Subtype init = *first++;
+    for (; first != last; ++first) init = f(std::move(init), *first);
+    return init;
+  } else return Subtype{};
+}
+template<class Iterator> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator>, std::decay_t<deref<Iterator>>>
+accumulate(Iterator first, Iterator last)
+{
+  return ryk::accumulate(first, last, [](auto a, auto b){ return a + b; });
+}
 template<class Iterable, class T> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> &&
                  !is_binary_function_v<T, subtype<Iterable>, subtype<Iterable>>, T>
-accumulate(const Iterable& c, T init = subtype<Iterable>{})
+accumulate(const Iterable& c, T init)
 {
   return std::accumulate(c.begin(), c.end(), init);
+}
+template<class Iterable> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
+accumulate(const Iterable& c)
+{
+  return ryk::accumulate(c.begin(), c.end());
 }
 template<class Iterable, class T, class Fn> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, T>
@@ -143,13 +249,13 @@ accumulate(const Iterable& c, T init, Fn f)
 {
   return std::accumulate(c.begin(), c.end(), init, f);
 }
-template<class Iterable, class Fn> inline constexpr
+template<class Iterable, class BinaryFn> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> &&
-                 is_binary_function_v<Fn, subtype<Iterable>, subtype<Iterable>>,
+                 is_binary_function_v<BinaryFn, subtype<Iterable>, subtype<Iterable>>,
                  subtype<Iterable>>
-accumulate(const Iterable& c, Fn f)
+accumulate(const Iterable& c, BinaryFn f)
 {
-  return std::accumulate(c.begin(), c.end(), subtype<Iterable>{}, f);
+  return ryk::accumulate(c.begin(), c.end(), f);
 }
 // template<class Iterable> inline constexpr
 // std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
@@ -173,10 +279,16 @@ accumulate(const Iterable& c, Fn f)
 //
 // sort
 //
-template<class T> inline constexpr
-std::set<T>& sort(const std::set<T>& s)
+template<class... Ts> inline constexpr
+std::set<Ts...>& sort(std::set<Ts...>& s)
 {
   return s;
+}
+template<class... Ts> inline constexpr
+std::list<Ts...>& sort(std::list<Ts...>& l)
+{
+  l.sort();
+  return l;
 }
 template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
@@ -440,23 +552,11 @@ count_if(const Iterable& c, UnaryPredicate p)
 //
 // copy and copy_if
 //
-template<class Iterator, class OutputIterator> inline constexpr
-std::enable_if_t<is_iterator_v<Iterator>, OutputIterator>
-copy(Iterator it, std::size_t count, OutputIterator out)
-{
-  return std::copy(it, it + count, out);
-}
 template<class Iterable, class OutputIterator> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> && is_iterator_v<OutputIterator>, OutputIterator>
 copy(const Iterable& c, OutputIterator out)
 {
   return std::copy(c.begin(), c.end(), out);
-}
-template<class Iterable, class OutputIterator> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable> && is_iterator_v<OutputIterator>, OutputIterator>
-copy(const Iterable& c, std::size_t count, OutputIterator out)
-{
-  return std::copy(c.begin(), c.begin() + count, out);
 }
 template<class Iterator, class OutputIterable> inline constexpr
 std::enable_if_t<is_iterator_v<Iterator> && is_iterable_v<OutputIterable>, OutputIterable&>
@@ -469,20 +569,17 @@ template<class Iterable, class OutputIterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<OutputIterable>, OutputIterable&>
 copy(const Iterable& c, OutputIterable& o)
 {
-  return copy(c, inserter(o));
+  return copy(c.begin(), c.end(), o);
 }
+//
+// this one is basically just a constructor that takes 2 iterators
+//
 template<class Iterable, class Iterator> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> && is_iterator_v<Iterator>, Iterable>
 copy(Iterator begin, Iterator end)
 {
-  auto r = construct_with_size<Iterable>(static_cast<std::size_t>(end - begin));
+  auto r = Iterable{};
   return copy(begin, end, r);
-}
-template<class Iterator, class OutputIterator, class UnaryPredicate> inline constexpr
-std::enable_if_t<is_pointerlike_v<Iterator> && !is_iterable_v<Iterator>, OutputIterator>
-copy_if(Iterator it, std::size_t count, OutputIterator out, UnaryPredicate f)
-{
-  return std::copy_if(it, it + count, out, f);
 }
 template<class Iterable, class OutputIterator, class UnaryPredicate> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, OutputIterator>
@@ -490,12 +587,30 @@ copy_if(const Iterable& c, OutputIterator out, UnaryPredicate f)
 {
   return std::copy_if(c.begin(), c.end(), out, f);
 }
-template<class Iterable, class OutputIterator, class UnaryPredicate> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, OutputIterator>
-copy_if(const Iterable& c, std::size_t count, OutputIterator out, UnaryPredicate f)
+template<class Iterable, class OutputIterable, class UnaryPredicate> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<OutputIterable>, OutputIterable&>
+copy_if(const Iterable& c, OutputIterable& out, UnaryPredicate f)
 {
-  return std::copy_if(c.begin(), count, out, f);
+  return std::copy_if(c, inserter(out), f);
 }
+template<class OutputIterable, class Iterable, class UnaryPredicate> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<OutputIterable>, OutputIterable&>
+copy_if(const Iterable& c, UnaryPredicate f)
+{
+  auto r = OutputIterable{};
+  return std::copy_if(c, r, f);
+}
+
+//
+// shuffle
+//
+template<class Iterable, class URBG> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
+shuffle(Iterable& c, URBG&& g)
+{
+  std::shuffle(c.begin(), c.end(), g);
+}
+
 
 //
 // has and has_if (not STL)
@@ -522,14 +637,17 @@ has_if(Iterable& c, Unary f)
 
 //
 // slice (not STL)
-// TODO: rework pointer arithmetic for different iterator types
 //
 template<class Iterator, class IndexIterator, class OutputIterator> inline constexpr
 OutputIterator
 slice(Iterator begin, IndexIterator index_begin, IndexIterator index_end, OutputIterator out)
 {
+  std::decay_t<deref<IndexIterator>> last_index = 0;
   for (; index_begin != index_end; ++index_begin, ++out) {
-    *out = *(begin + *index_begin);
+    std::advance(begin, *index_begin - last_index);
+    last_index = *index_begin;
+    *out = *begin;
+    ++out;
   }
   return out; 
 }
@@ -542,8 +660,8 @@ slice(const Iterable& c, const IterableIndices& indices, OutputIterator out)
 template<class Iterable, class IterableIndices> inline constexpr
 Iterable slice(const Iterable& c, const IterableIndices& indices) 
 {
-  auto r = construct_with_size<Iterable>(indices.size());
-  slice(c, indices, inserter(r));
+  Iterable r;
+  slice(c, indices, ryk::inserter(r));
   return r;
 }
  
@@ -576,11 +694,22 @@ transform(const Iterable& c, std::size_t count, OutputIterator out, Fn f)
   return transform(c.begin(), count, out, f); 
 }
 template<class Iterable, class OutputIterator, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable> && !is_iterable_v<OutputIterator>, OutputIterator>
+std::enable_if_t<is_iterable_v<Iterable> && is_iterator_v<OutputIterator>, OutputIterator>
 transform(const Iterable& c, OutputIterator out, Fn f)
 {
   return std::transform(c.begin(), c.end(), out, f); 
 }
+template<class Iterator, class OutputIterable, class Fn> inline constexpr
+std::enable_if_t<is_iterator_v<Iterator> && is_iterable_v<OutputIterable>, OutputIterable&>
+transform(Iterator begin, Iterator end, OutputIterable& out, Fn f)
+{
+  std::transform(begin, end, inserter(out), f); 
+  return out;
+}
+//
+// Note the following is ambigious with std::transform() if both namespaces are brough in
+// it must be explicity called with ryk::transform()
+//
 template<class Iterable, class OutputIterable, class Fn> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<OutputIterable>, OutputIterable&>
 transform(const Iterable& c, iterator<const Iterable> end, OutputIterable& out, Fn f)
@@ -621,7 +750,7 @@ std::enable_if_t<is_iterable_v<Iterable<Ts...>>,
 transform(const Iterable<Ts...>& c, Fn f)
 {
   // auto r = construct_with_size(c.size(), Iterable<std::result_of_t<Fn(T)>>); 
-  Iterable<std::result_of_t<Fn(subtype<Iterable<Ts...>>)>> r{c.size()};
+  Iterable<std::result_of_t<Fn(subtype<Iterable<Ts...>>)>> r{};
   return transform(c, r, f);
 }
 template<template<class> class Iterable, class Fn, class... Ts> inline constexpr
@@ -630,7 +759,7 @@ std::enable_if_t<is_iterable_v<Iterable<Ts...>>,
 transform(const Iterable<Ts...>& c, std::size_t count, Fn f)
 {
   // auto r = construct_with_size(c.size(), Iterable<std::result_of_t<Fn(T)>>); 
-  Iterable<std::result_of_t<Fn(subtype<Iterable<Ts...>>)>> r{count};
+  Iterable<std::result_of_t<Fn(subtype<Iterable<Ts...>>)>> r{};
   return transform(c, count, r, f);
 }
 template<template<class> class Iterable, class Fn, class... Ts> inline constexpr
@@ -639,7 +768,7 @@ std::enable_if_t<is_iterable_v<Iterable<Ts...>>,
 transform(const Iterable<Ts...>& c, iterator<Iterable<Ts...>> end, Fn f)
 {
   // auto r = construct_with_size(c.size(), Iterable<std::result_of_t<Fn(T)>>); 
-  Iterable<std::result_of_t<Fn(subtype<Iterable<Ts...>>)>> r{end - c.begin()};
+  Iterable<std::result_of_t<Fn(subtype<Iterable<Ts...>>)>> r{};
   return transform(c, end, r, f);
 }
 template<class Iterable, class Fn> inline constexpr
@@ -654,6 +783,33 @@ std::enable_if_t<is_iterable_v<Iterable>, Iterable>
 apply(Iterable c, Fn f)
 {
   return affect(c, f);
+}
+
+//
+// iota
+//
+template<class Iterable> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
+iota(Iterable& c, subtype<Iterable> init = subtype<Iterable>{})
+{
+  std::iota(c.begin(), c.end(), init);
+  return c;
+}
+
+//
+// print (not STL)
+//
+template<class Iterable> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, void>
+print(const Iterable& c, std::ostream& os)
+{
+  ryk::copy(c, std::ostream_iterator<subtype<Iterable>>(os, " "));
+}
+template<class Iterable> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, void>
+print(const Iterable& c)
+{
+  print(c, std::cout);
 }
 
 //
@@ -681,132 +837,6 @@ at(Iterable& c, std::size_t index)
 //   return c[index]; 
 // }
 
-//
-// common and statistical functions
-// TODO: median, quartiles, percentiles
-//
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
-sum(const Iterable& c, const subtype<Iterable>& init = subtype<Iterable>{})
-{
-  return accumulate(c, 
-    [](const subtype<Iterable>& t1, const subtype<Iterable>& t2) { return t1 + t2; });
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
-product(const Iterable& c, const subtype<Iterable>& init = subtype<Iterable>{})
-{
-  return accumulate(c, 
-    [](const subtype<Iterable>& t1, const subtype<Iterable>& t2) { return t1 * t2; });
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
-mean(const Iterable& c)
-{
-  if (c.size() != 0) return sum(c) / c.size();
-  return subtype<Iterable>{};
-}
-
-//
-// 'centered_squares' - the (x_i - mu)^2 component used in calculating variance
-//
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
-affect_centered_squares(Iterable& c, const subtype<Iterable>& meanval)
-{
-  return affect(c, [meanval](subtype<Iterable> t) { return (t - meanval) * (t - meanval); });
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, Iterable&>
-affect_centered_squares(Iterable& c)
-{
-  return affect_centered_squares(c, mean(c));
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, Iterable>
-centered_squares(Iterable c, const subtype<Iterable>& meanval)
-{
-  return affect_centered_squares(c, meanval); 
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, Iterable>
-centered_squares(const Iterable& c)
-{
-  return centered_squares(c, mean(c));
-}
-
-//
-// variance and vol (vol is standard deviation)
-//
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-affect_variance(Iterable& c, const subtype<Iterable>& meanval)
-{
-  return mean(affect_centered_squares(c, meanval));
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-affect_variance(Iterable& c)
-{
-  return affect_variance(c, mean(c));
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-variance(Iterable c, const subtype<Iterable>& meanval)
-{
-  return affect_variance(c, meanval);
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-variance(const Iterable& c)
-{
-  return variance(c, mean(c));
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
-affect_vol(Iterable& c, const subtype<Iterable>& meanval)
-{
-  return sqrt(affect_variance(c, meanval));
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
-affect_vol(Iterable& c)
-{
-  return affect_vol(c, mean(c)); 
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
-vol(Iterable c, const subtype<Iterable>& meanval)
-{
-  return affect_vol(c, meanval); 
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable<Iterable>::value, subtype<Iterable>>
-vol(const Iterable& c)
-{
-  return vol(c, mean(c));
-}
-
-//
-// median
-//
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-affect_median(Iterable& c)
-{
-  if (c.size() != 0) {
-    sort(c);
-    if (!is_even(c.size())) return at(c, c.size() / 2);
-    else return (at(c, c.size() / 2) + at(c, c.size() / 2 + 1)) / 2; 
-  }
-  else return 0;
-}
-template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, subtype<Iterable>>
-median(Iterable c)
-{
-  return affect_median(c);
-}
 
 } // namespace ryk
 

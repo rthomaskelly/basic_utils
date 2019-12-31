@@ -49,8 +49,12 @@ class deferred_graph
   deferred_graph();
   
   deferred_graph(const Node& new_root);
+
+  deferred_graph(const std::vector<Node>& new_roots);
   
   gcpp::deferred_vector<gcpp::deferred_ptr<graph_node>>& root_nodes() noexcept;
+
+  const gcpp::deferred_vector<gcpp::deferred_ptr<graph_node>>& root_nodes() const noexcept;
 
   gcpp::deferred_ptr<graph_node> selected_node();
 
@@ -66,15 +70,20 @@ class deferred_graph
 
   void add_root(gcpp::deferred_ptr<graph_node> new_root);
 
-  void add_child(gcpp::deferred_ptr<graph_node> parent, 
-                 const Node& child, const Edge& edge = Edge{});
+  std::pair<gcpp::deferred_ptr<graph_node>, Edge>& 
+  add_child(gcpp::deferred_ptr<graph_node> parent, 
+            const Node& child, const Edge& edge = Edge{});
   
+  std::pair<gcpp::deferred_ptr<graph_node>, Edge>& 
+  add_child(gcpp::deferred_ptr<graph_node> parent, 
+            gcpp::deferred_ptr<graph_node> child, const Edge& edge = Edge{});
+
   bool has(gcpp::deferred_ptr<graph_node> node);
  
   void attach(gcpp::deferred_ptr<graph_node>& parent, 
-              const deferred_graph& attachment, const Edge& edge = Edge{});
+              deferred_graph& attachment, const Edge& edge = Edge{});
  
-  void append(const deferred_graph& g, const Edge& edge = Edge{});
+  void append(deferred_graph& g, const Edge& edge = Edge{});
 
   bool operator==(const deferred_graph& rhs) const noexcept;
  
@@ -293,16 +302,28 @@ deferred_graph<Node, Edge>::deferred_graph()
 }
 template<class Node, class Edge>
 deferred_graph<Node, Edge>::deferred_graph(const Node& new_root)
+ : deferred_graph(std::vector<Node>{new_root})
+{
+}
+template<class Node, class Edge>
+deferred_graph<Node, Edge>::deferred_graph(const std::vector<Node>& new_roots)
  : deferred_graph()
 {
-  auto node = the_graph_heap.make<graph_node>(new_root);
-  // auto node = gcpp::deferred_ptr<graph_node>(graphnode, &graphnode->data); 
-  the_root_nodes.push_back(node);
-  the_selected_node = node;
+  for (auto& new_root : new_roots) {
+    auto node = the_graph_heap.make<graph_node>(new_root);
+    the_root_nodes.push_back(node);
+    the_selected_node = node;
+  } 
 }
 template<class Node, class Edge>
 gcpp::deferred_vector<gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>>&
 deferred_graph<Node, Edge>::root_nodes() noexcept
+{
+  return the_root_nodes;
+}
+template<class Node, class Edge>
+const gcpp::deferred_vector<gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>>&
+deferred_graph<Node, Edge>::root_nodes() const noexcept
 {
   return the_root_nodes;
 }
@@ -321,12 +342,25 @@ add_root(gcpp::deferred_ptr<graph_node> new_root)
   the_selected_node = new_root;
 }
 template<class Node, class Edge>
-void deferred_graph<Node, Edge>::
+std::pair<gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>, Edge>& 
+deferred_graph<Node, Edge>::
 add_child(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> parent, 
           const Node& child, const Edge& edge)
 {
   // TODO: add the parent back-pointer (this may break some const-ness in places)
-  parent->children.emplace_back(the_graph_heap.make<graph_node>(child), edge);
+  auto& r = parent->children.emplace_back(the_graph_heap.make<graph_node>(child), edge);
+  return r;
+}
+template<class Node, class Edge>
+std::pair<gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>, Edge>& 
+deferred_graph<Node, Edge>::
+add_child(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> parent, 
+          gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> child, 
+          const Edge& edge)
+{
+  // TODO: add the parent back-pointer (this may break some const-ness in places)
+  auto& r = parent->children.emplace_back(child, edge);
+  return r;
 }
 template<class Node, class Edge>
 gcpp::deferred_vector<std::pair<
@@ -352,17 +386,17 @@ has(gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node> node)
 template<class Node, class Edge>
 void deferred_graph<Node, Edge>::attach(
   gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>& parent,
-  const deferred_graph& attachment, const Edge& edge)
+  deferred_graph& attachment, const Edge& edge)
 {
-  for (auto& root : attachment.root_nodes())
+  for (auto root : attachment.root_nodes())
     add_child(parent, root, edge);
   if (attachment.selected_node() != nullptr) the_selected_node = attachment.selected_node(); 
 }
 template<class Node, class Edge>
-void deferred_graph<Node, Edge>::append(const deferred_graph& g, const Edge& edge)
+void deferred_graph<Node, Edge>::append(deferred_graph& g, const Edge& edge)
 {
   if (the_selected_node != nullptr) attach(the_selected_node, g, edge);
-  else if (the_root_nodes.empty()) *this = g;
+  else if (the_root_nodes.empty()) *this = g; //<--this line appears to be an issue, won't compile
   else {
     // may want to do something else if there is a non-empty graph
     // that does not have a selected node, but for now we'll throw
@@ -411,12 +445,14 @@ template<class Node, class Edge>
 gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
 deferred_graph<Node, Edge>::find(const Node& target)
 {
-  for (auto& root_node : root_nodes()) {
-    auto r = search_if<std::stack<searchlist_subtype>, true>
-             (root_node, [&target](graph_node& n){ return target == n; });
-    if (r != nullptr) return r;
-  }
-  return nullptr;
+  return targeted_depth_search(target);
+  // for (auto& root_node : root_nodes()) {
+  //   auto r = search_if<std::stack<searchlist_subtype>, true>
+  //            (root_node, [&target](graph_node& n){ return target == n; }, 
+  //             [](auto x){}, [](auto x, auto y){});
+  //   if (r != nullptr) return r;
+  // }
+  // return nullptr;
 }
 template<class Node, class Edge>
 template<class GraphNodePredicate>
@@ -494,7 +530,8 @@ gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
 deferred_graph<Node, Edge>::targeted_depth_search(const Node& target)
 {
   for (auto& root_node : root_nodes()) {
-    auto ptr = search<std::stack<searchlist_subtype>, true>(root_node, target); 
+    auto ptr = search<std::stack<searchlist_subtype>, true>(root_node, target,
+                 [](auto x){}, [](auto x){}, [](auto x, auto y){}); 
     if (ptr != nullptr) return ptr;
   }
   return nullptr;
@@ -644,7 +681,7 @@ search(const gcpp::deferred_ptr<typename deferred_graph<Node, Edge>::graph_node>
   while (!searchlist.empty()) {
     searchlist_subtype current_item = head(searchlist);
     auto current_node = current_item.first;
-    Node& payload = current_node;
+    Node& payload = current_node->data();
     if constexpr(targeted)
       if (payload == target) return current_node;
     node_status_map[current_node.get()] = search_status::touched;

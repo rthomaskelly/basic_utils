@@ -28,6 +28,30 @@ class boxed_type
   using the_boxedtype = T;
   
   constexpr operator T() const;
+
+  constexpr boxed_type<T> operator+(boxed_type<T> tt);
+  constexpr boxed_type<T> operator-(boxed_type<T> tt);
+  constexpr boxed_type<T> operator*(boxed_type<T> tt);
+  constexpr boxed_type<T> operator/(boxed_type<T> tt);
+
+  constexpr boxed_type<T> operator&(boxed_type<T> tt);
+  constexpr boxed_type<T> operator|(boxed_type<T> tt);
+
+  constexpr bool operator&&(boxed_type<T> tt);
+  constexpr bool operator||(boxed_type<T> tt);
+  constexpr bool operator!();
+
+  constexpr boxed_type<T> operator+(T tt);
+  constexpr boxed_type<T> operator-(T tt);
+  constexpr boxed_type<T> operator*(T tt);
+  constexpr boxed_type<T> operator/(T tt);
+
+  constexpr boxed_type<T> operator&(T tt);
+  constexpr boxed_type<T> operator|(T tt);
+  
+  constexpr bool operator&&(T tt);
+  constexpr bool operator||(T tt);
+
  protected:
   T t; 
 };
@@ -36,16 +60,98 @@ template<class T> inline constexpr
 boxed_type<T>::boxed_type()
 {
 }
-
 template<class T> inline constexpr
 boxed_type<T>::boxed_type(const T tt) : t(tt) 
 {
 }
-
 template<class T> inline constexpr
 boxed_type<T>::operator T() const
 {
   return t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator+(boxed_type<T> tt)
+{
+  return tt.t + t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator-(boxed_type<T> tt)
+{
+  return tt.t - t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator*(boxed_type<T> tt)
+{
+  return tt.t * t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator/(boxed_type<T> tt)
+{
+  return tt.t / t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator&(boxed_type<T> tt)
+{
+  return boxed_type<T>(tt) & t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator|(boxed_type<T> tt)
+{
+  return boxed_type<T>(tt) | t;
+}template<class T> inline constexpr
+bool boxed_type<T>::operator&&(boxed_type<T> tt)
+{
+  return tt.t && t;
+}
+template<class T> inline constexpr
+bool boxed_type<T>::operator||(boxed_type<T> tt)
+{
+  return tt.t || t;
+}
+template<class T> inline constexpr
+bool boxed_type<T>::operator!()
+{
+  return !t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator+(T tt)
+{
+  return boxed_type<T>(tt) + t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator-(T tt)
+{
+  return boxed_type<T>(tt) - t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator*(T tt)
+{
+  return boxed_type<T>(tt) * t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator/(T tt)
+{
+  return boxed_type<T>(tt) / t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator&(T tt)
+{
+  return boxed_type<T>(tt) & t;
+}
+template<class T> inline constexpr
+boxed_type<T> boxed_type<T>::operator|(T tt)
+{
+  return boxed_type<T>(tt) | t;
+}
+template<class T> inline constexpr
+bool boxed_type<T>::operator&&(T tt)
+{
+  return boxed_type<T>(tt) && t;
+}
+template<class T> inline constexpr
+bool boxed_type<T>::operator||(T tt)
+{
+  return boxed_type<T>(tt) || t;
 }
 
 template<class T> using boxedtype = boxed_type<T>;

@@ -11,6 +11,52 @@
 #include "statistics.hpp"
 #include "graph_deferred.hpp"
 
+#include "dynamic/Exp.hpp"
+
+using namespace std::string_literals;
+
+TEST(Traits, is_iterable)
+{
+  static_assert(!ryk::is_iterable_v<int>);
+  static_assert(!ryk::is_iterable_v<double>);
+  static_assert(!ryk::is_iterable_v<std::pair<int, double>>);
+  static_assert(!ryk::is_iterable_v<std::tuple<int, double, char*>>);
+  static_assert(!ryk::is_iterable_v<char*>);
+
+  static_assert(ryk::is_iterable_v<std::string>);
+  static_assert(ryk::is_iterable_v<std::vector<int>>);
+  static_assert(ryk::is_iterable_v<std::list<double>>);
+  static_assert(ryk::is_iterable_v<std::map<int, double>>);
+  static_assert(ryk::is_iterable_v<std::unordered_map<int, double>>);
+}
+
+TEST(Traits, is_pointerlike)
+{
+  const char* c_str = "testing";
+  // auto* a = ++c_str;
+  // a = c_str++;
+  auto c = *(c_str + 2);
+  
+  EXPECT_EQ(c, 's');
+
+  // why does this fail?
+  // static_assert(ryk::is_pointerlike_v<decltype(c_str)>);
+}
+
+TEST(Traits, is_iterator)
+{
+  std::vector<int> v;
+  static_assert(ryk::is_iterator_v<decltype(v.begin())>);
+  static_assert(ryk::is_iterator_v<decltype(v.end())>);
+  static_assert(!ryk::is_iterator_v<decltype(v)>);
+
+  std::string s;
+  static_assert(ryk::is_iterator_v<decltype(s.begin())>);
+  static_assert(ryk::is_iterator_v<decltype(s.end())>);
+  static_assert(!ryk::is_iterator_v<decltype(s)>);
+  
+}
+
 TEST(IterableAlgorithms, find)
 {
   std::map<int, int> m{ {1, 1}, {2, 2}, };
@@ -23,10 +69,17 @@ TEST(IterableAlgorithms, find)
   ASSERT_NE(ryk::find(l, 1), l.end());
   ASSERT_NE(ryk::find(a, 1), a.end());
 
-  ASSERT_EQ(ryk::find(m, 5), m.end());
-  ASSERT_EQ(ryk::find(v, 5), v.end());
-  ASSERT_EQ(ryk::find(l, 5), l.end());
-  ASSERT_EQ(ryk::find(a, 5), a.end());
+  // Having a tough time getting the below to compile.
+  // auto p = std::make_pair<const int, int>(1, 1);
+  // EXPECT_EQ(*ryk::find(m, 1), p);
+  EXPECT_EQ(*ryk::find(v, 1), 1);
+  EXPECT_EQ(*ryk::find(l, 1), 1);
+  EXPECT_EQ(*ryk::find(a, 1), 1);
+
+  EXPECT_EQ(ryk::find(m, 5), m.end());
+  EXPECT_EQ(ryk::find(v, 5), v.end());
+  EXPECT_EQ(ryk::find(l, 5), l.end());
+  EXPECT_EQ(ryk::find(a, 5), a.end());
 }
 
 TEST(IterableAlgorithms, find_index)
@@ -36,10 +89,10 @@ TEST(IterableAlgorithms, find_index)
   std::list<int> l{0, 1, 2};
   std::array<int, 3> a{0, 1, 2}; 
 
-  ASSERT_EQ(ryk::find_index(m, 1), 0);
-  ASSERT_EQ(ryk::find_index(v, 1), 1);
-  ASSERT_EQ(ryk::find_index(l, 1), 1);
-  ASSERT_EQ(ryk::find_index(a, 1), 1);
+  EXPECT_EQ(ryk::find_index(m, 1), 0);
+  EXPECT_EQ(ryk::find_index(v, 1), 1);
+  EXPECT_EQ(ryk::find_index(l, 1), 1);
+  EXPECT_EQ(ryk::find_index(a, 1), 1);
 }
 
 TEST(IterableAlgorithms, search)
@@ -54,21 +107,21 @@ TEST(IterableAlgorithms, search)
   std::list<int> l{0, 1, 2, 3, 4};
   std::list<int> l34{3, 4};
 
-  ASSERT_NE(ryk::search(m, m34), m.end());
-  ASSERT_NE(ryk::search(m, m3), m.end());
-  ASSERT_EQ(ryk::search(m, m24), m.end());
+  EXPECT_NE(ryk::search(m, m34), m.end());
+  EXPECT_NE(ryk::search(m, m3), m.end());
+  EXPECT_EQ(ryk::search(m, m24), m.end());
 
-  ASSERT_NE(ryk::search(v, v34), v.end());
-  ASSERT_EQ(ryk::search(v, v13), v.end());
-  ASSERT_NE(ryk::search(v, l34), v.end());
+  EXPECT_NE(ryk::search(v, v34), v.end());
+  EXPECT_EQ(ryk::search(v, v13), v.end());
+  EXPECT_NE(ryk::search(v, l34), v.end());
 
-  ASSERT_NE(ryk::search(l, v34), l.end());
-  ASSERT_EQ(ryk::search(l, v13), l.end());
-  ASSERT_NE(ryk::search(l, l34), l.end());
+  EXPECT_NE(ryk::search(l, v34), l.end());
+  EXPECT_EQ(ryk::search(l, v13), l.end());
+  EXPECT_NE(ryk::search(l, l34), l.end());
 
-  ASSERT_NE(ryk::search(m, l34, [](auto pair, auto i){ return pair.first == i; }), m.end());
-  ASSERT_NE(ryk::search(m, v34, [](auto pair, auto i){ return pair.first == i; }), m.end());
-  ASSERT_EQ(ryk::search(m, v13, [](auto pair, auto i){ return pair.first == i; }), m.end());
+  EXPECT_NE(ryk::search(m, l34, [](auto pair, auto i){ return pair.first == i; }), m.end());
+  EXPECT_NE(ryk::search(m, v34, [](auto pair, auto i){ return pair.first == i; }), m.end());
+  EXPECT_EQ(ryk::search(m, v13, [](auto pair, auto i){ return pair.first == i; }), m.end());
 }
 
 TEST(IterableAlgorithms, sort)
@@ -81,25 +134,25 @@ TEST(IterableAlgorithms, sort)
   std::list<int> ls{0, 1, 2, 3, 4, 5};
   std::set<int> ss{0, 1, 2, 3, 4, 5};
   
-  ASSERT_EQ(ryk::sort(v), vs);
-  ASSERT_EQ(ryk::sort(l), ls);
-  ASSERT_EQ(ryk::sort(s), ss);
+  EXPECT_EQ(ryk::sort(v), vs);
+  EXPECT_EQ(ryk::sort(l), ls);
+  EXPECT_EQ(ryk::sort(s), ss);
 }
 
 TEST(IterableAlgorithms, accumulate_vector)
 {
-  std::vector<int> c{1, 2, 3, 4};
+  const std::vector<int> c{1, 2, 3, 4};
   std::vector<int> cE{};
   std::vector<int> c2{2}; 
   std::vector<std::string> cs{"this", "is", "a", "test"};
   
-  ASSERT_EQ(ryk::accumulate(c), 10);
-  ASSERT_EQ(ryk::accumulate(cE), int{});
-  ASSERT_EQ(ryk::accumulate(c2), 2);
-  ASSERT_EQ(ryk::accumulate(cs), std::string{"thisisatest"});
-  ASSERT_EQ(ryk::accumulate(c, [](auto a, auto b){ return a * b; }), 24);
-  ASSERT_EQ(ryk::accumulate(cE, [](auto a, auto b){ return a * b; }), int{});
-  ASSERT_EQ(ryk::accumulate(c2, [](auto a, auto b){ return a * b; }), 2);
+  EXPECT_EQ(ryk::accumulate(c), 10);
+  EXPECT_EQ(ryk::accumulate(cE), int{});
+  EXPECT_EQ(ryk::accumulate(c2), 2);
+  EXPECT_EQ(ryk::accumulate(cs), "thisisatest"s);
+  EXPECT_EQ(ryk::accumulate(c, [](auto a, auto b){ return a * b; }), 24);
+  EXPECT_EQ(ryk::accumulate(cE, [](auto a, auto b){ return a * b; }), int{});
+  EXPECT_EQ(ryk::accumulate(c2, [](auto a, auto b){ return a * b; }), 2);
 }
 
 TEST(IterableAlgorithms, accumulate_list)
@@ -109,13 +162,13 @@ TEST(IterableAlgorithms, accumulate_list)
   std::list<int> c2{2}; 
   std::list<std::string> cs{"this", "is", "a", "test"};
   
-  ASSERT_EQ(ryk::accumulate(c), 10);
-  ASSERT_EQ(ryk::accumulate(cE), int{});
-  ASSERT_EQ(ryk::accumulate(c2), 2);
-  ASSERT_EQ(ryk::accumulate(cs), std::string{"thisisatest"});
-  ASSERT_EQ(ryk::accumulate(c, [](auto a, auto b){ return a * b; }), 24);
-  ASSERT_EQ(ryk::accumulate(cE, [](auto a, auto b){ return a * b; }), int{});
-  ASSERT_EQ(ryk::accumulate(c2, [](auto a, auto b){ return a * b; }), 2);
+  EXPECT_EQ(ryk::accumulate(c), 10);
+  EXPECT_EQ(ryk::accumulate(cE), int{});
+  EXPECT_EQ(ryk::accumulate(c2), 2);
+  EXPECT_EQ(ryk::accumulate(cs), "thisisatest"s);
+  EXPECT_EQ(ryk::accumulate(c, [](auto a, auto b){ return a * b; }), 24);
+  EXPECT_EQ(ryk::accumulate(cE, [](auto a, auto b){ return a * b; }), int{});
+  EXPECT_EQ(ryk::accumulate(c2, [](auto a, auto b){ return a * b; }), 2);
 }
 
 TEST(IterableAlgorithms, accumulate_set)
@@ -125,13 +178,13 @@ TEST(IterableAlgorithms, accumulate_set)
   std::set<int> c2{2}; 
   std::set<std::string> cs{"this", "is", "a", "test"};
   
-  ASSERT_EQ(ryk::accumulate(c), 10);
-  ASSERT_EQ(ryk::accumulate(cE), int{});
-  ASSERT_EQ(ryk::accumulate(c2), 2);
-  ASSERT_EQ(ryk::accumulate(cs), std::string{"aistestthis"});
-  ASSERT_EQ(ryk::accumulate(c, [](auto a, auto b){ return a * b; }), 24);
-  ASSERT_EQ(ryk::accumulate(cE, [](auto a, auto b){ return a * b; }), int{});
-  ASSERT_EQ(ryk::accumulate(c2, [](auto a, auto b){ return a * b; }), 2);
+  EXPECT_EQ(ryk::accumulate(c), 10);
+  EXPECT_EQ(ryk::accumulate(cE), int{});
+  EXPECT_EQ(ryk::accumulate(c2), 2);
+  EXPECT_EQ(ryk::accumulate(cs), "aistestthis"s);
+  EXPECT_EQ(ryk::accumulate(c, [](auto a, auto b){ return a * b; }), 24);
+  EXPECT_EQ(ryk::accumulate(cE, [](auto a, auto b){ return a * b; }), int{});
+  EXPECT_EQ(ryk::accumulate(c2, [](auto a, auto b){ return a * b; }), 2);
 }
 
 TEST(IterableAlgorithms, slice_vector)
@@ -145,11 +198,11 @@ TEST(IterableAlgorithms, slice_vector)
   std::vector<std::string> cs_slice4_eq{"a", "is"};
    
   
-  ASSERT_EQ(ryk::slice(c, slice1), slice1);
-  ASSERT_EQ(ryk::slice(c, slice2), slice2);
-  ASSERT_EQ(ryk::slice(c, slice3), slice3);
-  ASSERT_EQ(ryk::slice(cs, slice4), cs_slice4_eq); 
-  // ASSERT_EQ(ryk::slice(cs, {2, 1}), cs_slice4_eq); this init-list version doesn't compile
+  EXPECT_EQ(ryk::slice(c, slice1), slice1);
+  EXPECT_EQ(ryk::slice(c, slice2), slice2);
+  EXPECT_EQ(ryk::slice(c, slice3), slice3);
+  EXPECT_EQ(ryk::slice(cs, slice4), cs_slice4_eq); 
+  // EXPECT_EQ(ryk::slice(cs, {2, 1}), cs_slice4_eq); this init-list version doesn't compile
 }
 
 TEST(IterableAlgorithms, slice_list)
@@ -166,10 +219,10 @@ TEST(IterableAlgorithms, slice_list)
   std::list<int> c_slice2_eq{5};
    
   
-  ASSERT_EQ(ryk::slice(c, slice1), c_slice1_eq);
-  ASSERT_EQ(ryk::slice(c, slice2), c_slice2_eq);
-  ASSERT_EQ(ryk::slice(c, slice3), slice3);
-  ASSERT_EQ(ryk::slice(cs, slice4), cs_slice4_eq); 
+  EXPECT_EQ(ryk::slice(c, slice1), c_slice1_eq);
+  EXPECT_EQ(ryk::slice(c, slice2), c_slice2_eq);
+  EXPECT_EQ(ryk::slice(c, slice3), slice3);
+  EXPECT_EQ(ryk::slice(cs, slice4), cs_slice4_eq); 
 }
 
 TEST(IterableAlgorithms, slice_set)
@@ -185,10 +238,10 @@ TEST(IterableAlgorithms, slice_set)
   std::set<int> c_slice2_eq{5};
   std::set<int> c_slice3_eq{1, 2, 4};
   
-  ASSERT_EQ(ryk::slice(c, slice1), slice1);
-  ASSERT_EQ(ryk::slice(c, slice2), c_slice2_eq);
-  ASSERT_EQ(ryk::slice(c, slice3), c_slice3_eq);
-  ASSERT_EQ(ryk::slice(cs, slice4), cs_slice4_eq); 
+  EXPECT_EQ(ryk::slice(c, slice1), slice1);
+  EXPECT_EQ(ryk::slice(c, slice2), c_slice2_eq);
+  EXPECT_EQ(ryk::slice(c, slice3), c_slice3_eq);
+  EXPECT_EQ(ryk::slice(cs, slice4), cs_slice4_eq); 
 }
 
 TEST(Statistics, mean)
@@ -197,9 +250,9 @@ TEST(Statistics, mean)
   std::list<int> l{1, 2, 3, 4, 5};
   std::set<int> s{0, 1, 2, 3, 4};
 
-  ASSERT_EQ(ryk::mean(v), 2);
-  ASSERT_EQ(ryk::mean(l), 3);
-  ASSERT_EQ(ryk::mean(s), 2);
+  EXPECT_EQ(ryk::mean(v), 2);
+  EXPECT_EQ(ryk::mean(l), 3);
+  EXPECT_EQ(ryk::mean(s), 2);
 }
 
 TEST(Statistics, median)
@@ -211,12 +264,12 @@ TEST(Statistics, median)
   std::vector<int> vE{};
   std::vector<int> v1{1};
   
-  ASSERT_EQ(ryk::median(v), 2);
-  ASSERT_EQ(ryk::median(l), 3);
-  ASSERT_EQ(ryk::median(s), 2);  
-  ASSERT_EQ(ryk::median(vd), 2.5);  
-  ASSERT_EQ(ryk::median(vE), 0);  
-  ASSERT_EQ(ryk::median(v1), 1);  
+  EXPECT_EQ(ryk::median(v), 2);
+  EXPECT_EQ(ryk::median(l), 3);
+  EXPECT_EQ(ryk::median(s), 2);  
+  EXPECT_EQ(ryk::median(vd), 2.5);  
+  EXPECT_EQ(ryk::median(vE), 0);  
+  EXPECT_EQ(ryk::median(v1), 1);  
 }
 
 TEST(Statistics, quartiles)
@@ -225,11 +278,11 @@ TEST(Statistics, quartiles)
   ryk::iota(v);
   
   auto the_quartiles = ryk::quartiles(v);
-  ASSERT_EQ(the_quartiles[0], 0);
-  ASSERT_EQ(the_quartiles[25], 25);
-  ASSERT_EQ(the_quartiles[50], 50);
-  ASSERT_EQ(the_quartiles[75], 75);
-  ASSERT_EQ(the_quartiles[100], 100);
+  EXPECT_EQ(the_quartiles[0], 0);
+  EXPECT_EQ(the_quartiles[25], 25);
+  EXPECT_EQ(the_quartiles[50], 50);
+  EXPECT_EQ(the_quartiles[75], 75);
+  EXPECT_EQ(the_quartiles[100], 100);
 }
 
 TEST(DeferredGraph, graph)
@@ -258,31 +311,31 @@ TEST(DeferredGraph, graph)
   // auto ptr = ryk::the_graph_heap.make<ryk::deferred_graph<int, int>::graph_node>(10);
  
   auto node_dptr = g.targeted_depth_search(20);
-  ASSERT_NE(node_dptr, nullptr);
-  ASSERT_EQ(node_dptr->data(), 20);
+  EXPECT_NE(node_dptr, nullptr);
+  EXPECT_EQ(node_dptr->data(), 20);
 
   node_dptr = g.find(20);
-  ASSERT_NE(node_dptr, nullptr);
-  ASSERT_EQ(node_dptr->data(), 20);
+  EXPECT_NE(node_dptr, nullptr);
+  EXPECT_EQ(node_dptr->data(), 20);
   
   //
   // test attach()
   std::vector<int> rootv{30, 31};
   ryk::deferred_graph<int, int> sub_g(rootv);
   auto dptr_subg30 = sub_g.find(30);  
-  ASSERT_NE(dptr_subg30, nullptr);
-  ASSERT_EQ(dptr_subg30->data(), 30);
+  EXPECT_NE(dptr_subg30, nullptr);
+  EXPECT_EQ(dptr_subg30->data(), 30);
  
   sub_g.add_child(dptr_subg30, 300);
 
   auto dptr_g3 = g.find(3);
-  ASSERT_NE(dptr_g3, nullptr);
-  ASSERT_EQ(dptr_g3->data(), 3); 
+  EXPECT_NE(dptr_g3, nullptr);
+  EXPECT_EQ(dptr_g3->data(), 3); 
   g.attach(dptr_g3, sub_g);
   
   auto dptr_g300 = g.find(300);
-  ASSERT_NE(dptr_g300, nullptr);
-  ASSERT_EQ(dptr_g300->data(), 300);
+  EXPECT_NE(dptr_g300, nullptr);
+  EXPECT_EQ(dptr_g300->data(), 300);
 
   //
   // test append()
@@ -290,10 +343,37 @@ TEST(DeferredGraph, graph)
   //ryk::deferred_graph<int, int> sub_g2(3000);
   //g.append(sub_g2);
   //auto dptr_g3000 = g.find(3000);
-  //ASSERT_NE(dptr_g3000, nullptr);
-  //ASSERT_EQ(dptr_g3000->data(), 3000);
+  //EXPECT_NE(dptr_g3000, nullptr);
+  //EXPECT_EQ(dptr_g3000->data(), 3000);
 }
 
+TEST(dlist, dlist)
+{
+  ryk::dlist l;
+  l.push_back(4ul);
+  l.push_back("Happy!"s);
+  l.push_back(42.5);
+
+  EXPECT_EQ(l.front<unsigned long>(), 4ul);
+  l.pop_front();
+  EXPECT_EQ(l.front<std::string>(), "Happy!"s);
+  l.pop_front();
+  EXPECT_EQ(l.front<double>(), 42.5);
+}
+
+TEST(dlist, runtime_dlist)
+{
+  ryk::dlist l;
+  ryk::RTA i(4);
+  ryk::RTA d(43.20);
+  ryk::RTA s("Happy!");
+  
+  l.push_back(i);
+  l.push_back(d);
+  l.push_back(s);
+
+  std::cout << l << std::endl;
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

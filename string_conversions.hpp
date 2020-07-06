@@ -2,12 +2,14 @@
 #define ryk_string_conversions_hpp
 
 #include "traits.hpp"
+#include "iterable_algorithms.hpp"
 #include "ostream_operators.hpp"
 #include "string_predicates.hpp"
 
 #include <string>
 #include <memory>
 #include <variant>
+#include <cctype>
 
 namespace ryk {
 
@@ -17,6 +19,20 @@ namespace ryk {
 // includes wrappers around std::to_string functions so everything is in one namespace 
 // also includes as_string() synonyms
 //
+
+//
+// this version makes a copy
+inline std::string to_lower(std::string s)
+{
+  // have to static_cast std::tolower result to char or else its an int
+  // and that will cause a bunch of problems
+  return affect(s, [](char c){ return static_cast<char>(std::tolower(c)); });
+}
+inline std::string tolower(std::string s)
+{
+  return to_lower(s);
+}
+
 
 //
 // const char *

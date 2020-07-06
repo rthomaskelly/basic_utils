@@ -7,16 +7,16 @@
 namespace gsl {
 
 template<class Iterator> inline constexpr
-std::enable_if_t<is_iterator_v<Iterator>, span<deref<Iterator>>>
-make_span(Iterator iter, typename span<deref<Iterator>>::index_type count)
+std::enable_if_t<ryk::is_iterator_v<Iterator>, span<ryk::deref<Iterator>>>
+make_span(Iterator iter, typename span<ryk::deref<Iterator>>::index_type count)
 {
-  return span<deref<Iterator>>(iter, count);
+  return span<ryk::deref<Iterator>>(iter, count);
 }
 template<class Iterator> inline constexpr
-std::enable_if_t<is_iterator_v<Iterator>, span<deref<Iterator>>>
+std::enable_if_t<ryk::is_iterator_v<Iterator>, span<ryk::deref<Iterator>>>
 make_span(Iterator first, Iterator last)
 {
-  return span<deref<Iterator>>(first, last);
+  return span<ryk::deref<Iterator>>(first, last);
 }
 
 } // namespace gsl

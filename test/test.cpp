@@ -12,6 +12,7 @@
 #include "graph_deferred.hpp"
 
 #include "dynamic/Exp.hpp"
+#include "dynamic/runtime_list.hpp"
 
 using namespace std::string_literals;
 
@@ -372,7 +373,59 @@ TEST(dlist, runtime_dlist)
   l.push_back(d);
   l.push_back(s);
 
-  std::cout << l << std::endl;
+  EXPECT_EQ(std::to_string(l), "[ 4 43.2 Happy! ]");
+}
+
+TEST(dlist, Exp)
+{
+  ryk::RTA s("Exp!");
+  ryk::Exp e(s);
+  ryk::dlist l;
+  l.push_back(e);
+
+  EXPECT_EQ(std::to_string(l), "[ Exp! ]"s);
+  ryk::RTA i(4);
+  l.push_back(i);
+
+  //
+  // The following lines worked last time I tried.
+  // the List type defined in Exp.hpp has to be set to ryk::dlist
+  // for them to compile.
+
+  // ryk::Exp exp_l(l);
+  // l.push_back(exp_l);
+  // EXPECT_EQ(std::to_string(l), "[ Exp! 4 [ Exp! 4 ] ]"s);
+}
+
+TEST(runtime_list, runtime_list)
+{
+  ryk::runtime_list l;
+  ryk::RTA i(4);
+  ryk::RTA s("Happy!");
+  l.push_back(i);
+  l.push_back(s);
+
+  EXPECT_EQ(l.front<ryk::RTA>().getInt(), 4);
+  l.pop_front();
+  EXPECT_EQ(l.front<ryk::RTA>().getSymbol(), "Happy!"s);
+  l.push_front(i);
+  l.push_front(l);
+  EXPECT_EQ(std::to_string(l), "[ [ 4 Happy! ] 4 Happy! ]"s);
+}
+
+TEST(runtime_list, Exp)
+{
+  ryk::RTA s("Exp!");
+  ryk::Exp e(s);
+  ryk::runtime_list l;
+  l.push_back(e);
+
+  EXPECT_EQ(std::to_string(l), "[ Exp! ]"s);
+  ryk::RTA i(4);
+  l.push_back(i);
+  ryk::Exp exp_l(l);
+  l.push_back(exp_l);
+  EXPECT_EQ(std::to_string(l), "[ Exp! 4 [ Exp! 4 ] ]"s);
 }
 
 int main(int argc, char **argv) {

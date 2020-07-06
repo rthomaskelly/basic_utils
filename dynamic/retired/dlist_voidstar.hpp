@@ -3,7 +3,6 @@
 #include <list>
 #include <memory>
 #include <type_traits>
-#include <iostream>
 
 #include "runtime.hpp"
 
@@ -11,9 +10,8 @@ namespace ryk {
 
 //
 // dlist implements a dynamicaly typed list
-// by adapting std::list with a std::shared_ptr<void> 
+// by adapting std::list with a void* 
 // 
-// I'm not so sure this is ever going to work quite right for my needs.
 
 //
 // dlist_node wraps a dynamically typed element
@@ -22,12 +20,24 @@ class dlist_node
 {
 public:
   dlist_node() 
-   : _data(nullptr) {}
+   : _data(nullptr), _size(0) {}
+
+  ~dlist_node()
+  {
+    if (_data != nullptr) {
+      // free(_data); // this will leak if _data has non-trivial dtor
+      delete _data;
+    }
+  }
 
   template<class T>
   void set(const T& t)
   {
-    _data = std::make_shared<T>(t);
+    if (_data != nullptr) free(_data);
+    _data = malloc(sizeof(T));
+    *reinterpret_cast<T*>(_data) = t; 
+    // std::cout << *reinterpret_cast<T*>(_data) << std::endl;
+    _size = sizeof(T); // set _size last so if exception in malloc or assignment will be 0
   }
 
   template<class T>
@@ -38,11 +48,15 @@ public:
   }
 
   dlist_node(const dlist_node& n)
-   : _data(n._data)
+   : _size(n._size)
   {
+    // try to deep copy as much as we can
+    // we won't be able to deep copy dynamically allocated memory
+    _data = malloc(_size);
+    memcpy(_data, n._data, _size);
   } 
-  dlist_node(dlist_node&& n)
-   : _data(std::move(n._data))
+  constexpr dlist_node(dlist_node&& n)
+   : _data(std::move(n._data)), _size(n._size) 
   {
   }
 
@@ -53,19 +67,25 @@ public:
   }
 
   template<class T = void>
-  const T& data() const
+  T* data()
   {
-    return *std::reinterpret_pointer_cast<T>(_data);
+    return reinterpret_cast<T*>(_data);
   }
 
-  template<class T = void>
-  T& data()
-  {
-    return const_cast<T&>(const_cast<const dlist_node*>(this)->data<T>());
-  }
+  // template<class T = void>
+  // const T* data() const
+  // {
+  //   return reinterpret_cast<const T*>(_data);
+  // }
+  // template<class T = void>
+  // const T* get() const
+  // {
+  //   return data<T>(); 
+  // }
  
 private:
-  std::shared_ptr<void> _data;
+  void* _data;
+  std::size_t _size; // have to store the size to do deep copys
   
   void swap(dlist_node& n)
   {
@@ -91,22 +111,22 @@ class dlist : public RTTI
   template<class T>
   T& front()
   {
-    return _list.front().data<T>();
+    return *(_list.front().data<T>());
   }
   template<class T>
   T& front() const
   {
-    return _list.front().data<T>();
+    return *(_list.front().data<T>());
   }
   template<class T>
   T& back()
   {
-    return _list.back().data<T>();
+    return *(_list.back().data<T>());
   }
   template<class T>
   T& back() const
   {
-    return _list.back().data<T>();
+    return *(_list.back().data<T>());
   }
   void pop_front()
   {
@@ -142,7 +162,12 @@ class dlist : public RTTI
   {
     return _list.end();
   } 
-    
+  ExpType getRTTI() const noexcept
+  {
+    // RTTI: Run time type info
+    return ExpType::List;
+  }
+  
   friend std::ostream& operator<<(std::ostream&, const dlist&);
  protected:
   list_type _list;
@@ -152,5 +177,15 @@ class dlist : public RTTI
     std::swap(_list, rhs._list);
   }
 };
+
+inline std::ostream& operator<<(std::ostream& os, const dlist& l)
+{
+  os << "[ ";
+  // for (auto& e : l) os << e.get<RTTI>().type() << " ";
+  os << " ]";
+  return os; 
+}
+
+
 
 } // namespace ryk

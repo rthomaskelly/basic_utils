@@ -28,7 +28,10 @@ std::underlying_type_t<T> underlying_cast(T t)
 //
 // find and find_if family
 // find_index returns an index instead of an iterator
-// index_of is a synonym for find_index
+// some of the below are commented out:
+// I originally had index_of as a synonym of find_index
+// but I think it's better to have index_of take an iterable and an iterator
+// and return the index of the iterator.
 //
 template<class Map> inline constexpr
 std::enable_if_t<is_map_v<Map>, iterator<Map>>
@@ -60,11 +63,11 @@ size_t find_index(Iterator begin, Iterator end, const T& t)
 {
   return std::distance(begin, std::find(begin, end, t));
 }
-template<class Iterator, class T> inline constexpr
-size_t index_of(Iterator begin, Iterator end, const T& t)
-{
-  return find_index(begin, end, t);
-}
+// template<class Iterator, class T> inline constexpr
+// size_t index_of(Iterator begin, Iterator end, const T& t)
+// {
+//   return find_index(begin, end, t);
+// }
 template<class Iterator, class Fn> inline constexpr
 size_t find_if_index(Iterator begin, Iterator end, Fn f)
 {
@@ -88,18 +91,22 @@ find_index_if(Iterable& c, Pred pred)
 {
   return find_if_index(c, pred);
 }
-template<class Iterable, class T> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
-index_of(Iterable& c, const T& t)
-{
-  return find_index(c, t);
-}
-template<class Iterable, class Pred> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
-index_of_if(Iterable& c, Pred pred)
-{
-  return find_if_index(c, pred);
-}
+// The next two 'index_of's are commented out.
+// I think index_of should just take an Iterable an iterator
+// and return the index of the iterator.
+//
+// template<class Iterable, class T> inline constexpr
+// std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
+// index_of(Iterable& c, const T& t)
+// {
+//   return find_index(c, t);
+// }
+// template<class Iterable, class Pred> inline constexpr
+// std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
+// index_of_if(Iterable& c, Pred pred)
+// {
+//   return find_if_index(c, pred);
+// }
 template<class Iterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, distance<Iterable>>
 index_of(const Iterable& c, const iterator<const Iterable> i)
@@ -338,27 +345,34 @@ erase_remove_if(Iterable& c, Fn f)
 }
 
 //
-// replace, replace_if, for replace_all look at boost::replace_all
+// replace, replace_if
+// note that these functions replace all occurrences
 //
 template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, iterator<Iterable>>
+std::enable_if_t<is_iterable_v<Iterable>, void>
 replace(Iterable& c, const subtype<Iterable>& old_value, const subtype<Iterable>& new_value)
 {
   std::replace(c.begin(), c.end(), old_value, new_value);
 }
-template<class Iterable, class Fn> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, iterator<Iterable>>
-replace_if(Iterable& c, Fn f, const subtype<Iterable>& new_value)
+//
+// replace_if takes a UnaryPredicate to determine whether to replace an element
+template<class Iterable, class Unary> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>, void>
+replace_if(Iterable& c, Unary pred, const subtype<Iterable>& new_value)
 {
-  std::replace_if(c.begin(), c.end(), f, new_value);
+  std::replace_if(c.begin(), c.end(), pred, new_value);
 }
+//
+// The next variants replace a value with any number of replacement values
+// But they have a bug - they only replace the first occurrence
 template<class Iterable, class InIter> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable>, iterator<Iterable>>
 replace(Iterable& c, const subtype<Iterable>& old_value, 
         InIter new_values_begin, InIter new_values_end)
 {
   auto it = find(c, old_value);
-  if (it != c.end()) insert(c, it, new_values_begin, new_values_end);
+  if (it != c.end()) return insert(c, it, new_values_begin, new_values_end);
+  else return it;
 }
 template<class Iterable, class InsertIterable> inline constexpr
 std::enable_if_t<is_iterable_v<Iterable> && is_iterable_v<InsertIterable>, iterator<Iterable>>
@@ -366,6 +380,7 @@ replace(Iterable& c, const subtype<Iterable>& old_value, const InsertIterable& i
 {
   return replace(c, old_value, i.begin(), i.end());
 }
+
 
 //
 // unique and erase_duplicates
@@ -768,6 +783,8 @@ std::enable_if_t<is_iterable_v<Iterable<Ts...>>,
 transform(const Iterable<Ts...>& c, iterator<Iterable<Ts...>> end, Fn f)
 {
   // auto r = construct_with_size(c.size(), Iterable<std::result_of_t<Fn(T)>>); 
+  // The following line is problematic
+  // The Iterable<Ts..> suddenly loses all its extra type parameters
   Iterable<std::result_of_t<Fn(subtype<Iterable<Ts...>>)>> r{};
   return transform(c, end, r, f);
 }
@@ -794,6 +811,68 @@ iota(Iterable& c, subtype<Iterable> init = subtype<Iterable>{})
 {
   std::iota(c.begin(), c.end(), init);
   return c;
+}
+
+//
+// lower_bound and upper_bound
+// with their index_of_lower_bound & index_of_upper_bound variants
+// index_of* variants return an index instead of an iterator
+//
+template<class Iterable, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_equality_comparable_v<subtype<Iterable>, T>,
+                 iterator<Iterable>>
+lower_bound(Iterable& c, const T& t)
+{
+  return std::lower_bound(c.begin(), c.end(), t);
+}
+template<class Iterable, class T, class Compare> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>,
+                 iterator<Iterable>>
+lower_bound(Iterable& c, const T& t, Compare comp)
+{
+  return std::lower_bound(c.begin(), c.end(), t, comp);
+}
+template<class Iterable, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_equality_comparable_v<subtype<Iterable>, T>,
+                 distance<Iterable>>
+index_of_lower_bound(Iterable& c, const T& t)
+{
+  return index_of(c, lower_bound(c, t));
+}
+template<class Iterable, class T, class Compare> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>,
+                 distance<Iterable>>
+index_of_lower_bound(Iterable& c, const T& t, Compare comp)
+{
+  return index_of(c, lower_bound(c, t, comp)); 
+}
+template<class Iterable, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_equality_comparable_v<subtype<Iterable>, T>,
+                 iterator<Iterable>>
+upper_bound(Iterable& c, const T& t)
+{
+  return std::upper_bound(c.begin(), c.end(), t);
+}
+template<class Iterable, class T, class Compare> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>,
+                 iterator<Iterable>>
+upper_bound(Iterable& c, const T& t, Compare comp)
+{
+  return std::upper_bound(c.begin(), c.end(), t, comp);
+}
+template<class Iterable, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable> && is_equality_comparable_v<subtype<Iterable>, T>,
+                 distance<Iterable>>
+index_of_upper_bound(Iterable& c, const T& t)
+{
+  return index_of(c, upper_bound(c, t));
+}
+template<class Iterable, class T, class Compare> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable>,
+                 distance<Iterable>>
+index_of_upper_bound(Iterable& c, const T& t, Compare comp)
+{
+  return index_of(c, upper_bound(c, t, comp));
 }
 
 //
@@ -837,6 +916,23 @@ at(Iterable& c, std::size_t index)
 //   return c[index]; 
 // }
 
+//
+// match (not STL, equivalent of Excel VLOOKUP)
+// Given a sorted Iterable 'search_fields', match returns the value
+// of a corresponding Iterable. The index of the corresponding Iterable
+// is the upper bound of a search criterion within the search_fields Iterable. 
+template<class Iterable1, class Iterable2, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>, iterator<Iterable2>>
+match(const Iterable1& search_fields, const Iterable2& return_values, const T& criterion)
+{
+  return ryk::at(return_values, ryk::index_of_upper_bound(search_fields, criterion));
+}
+template<class Iterable1, class Iterable2, class T> inline constexpr
+std::enable_if_t<is_iterable_v<Iterable1> && is_iterable_v<Iterable2>, iterator<Iterable2>>
+exact_match(const Iterable1& search_fields, const Iterable2& return_values, const T& criterion)
+{
+  return ryk::at(return_values, ryk::find_index(search_fields, criterion));
+}
 
 } // namespace ryk
 

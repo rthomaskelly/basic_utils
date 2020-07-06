@@ -104,6 +104,11 @@ std::back_insert_iterator<std::vector<Ts...>> inserter(std::vector<Ts...>& v)
 {
   return std::back_inserter(v);
 }
+inline
+std::back_insert_iterator<std::string> inserter(std::string& s)
+{
+  return std::back_inserter(s);
+}
 template<class... Ts> inline
 std::back_insert_iterator<std::list<Ts...>> inserter(std::list<Ts...>& m)
 {

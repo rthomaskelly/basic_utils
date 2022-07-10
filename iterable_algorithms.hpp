@@ -2,6 +2,8 @@
 #define ryk_iterable_algorithms
 
 #include <algorithm>
+#include <iostream>
+#include <iterator>
 #include <numeric>
 
 #include "traits.hpp"
@@ -879,16 +881,17 @@ index_of_upper_bound(Iterable& c, const T& t, Compare comp)
 // print (not STL)
 //
 template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, void>
+std::enable_if_t<is_iterable_v<Iterable>, std::ostream&>
 print(const Iterable& c, std::ostream& os)
 {
   ryk::copy(c, std::ostream_iterator<subtype<Iterable>>(os, " "));
+  return os;
 }
 template<class Iterable> inline constexpr
-std::enable_if_t<is_iterable_v<Iterable>, void>
+std::enable_if_t<is_iterable_v<Iterable>, std::ostream&>
 print(const Iterable& c)
 {
-  print(c, std::cout);
+  return print(c, std::cout);
 }
 
 //

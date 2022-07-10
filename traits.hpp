@@ -181,6 +181,23 @@ struct is_pair_iterator
 };
 template<class T> inline constexpr bool is_pair_iterator_v = is_pair_iterator<T>::value;
 
+//
+// first_argument_of & first_argument_of_t -- retrieve the first argument of a lambda
+// useful when generalizing std::algorithm interfaces, for instance
+//
+template<typename F, typename Ret, typename A, typename... Rest>
+A first_argument_helper(Ret (F::*)(A, Rest...));
+template<typename F, typename Ret, typename A, typename... Rest>
+A first_argument_helper(Ret (F::*)(A, Rest...) const);
+
+template<typename F>
+struct first_argument_of {
+    typedef decltype( first_argument_helper(&F::operator()) ) type;
+};
+template<class F>
+using first_argument_of_t = typename first_argument_of<F>::type;
+
+
 
 //
 // C++-20 Concepts
